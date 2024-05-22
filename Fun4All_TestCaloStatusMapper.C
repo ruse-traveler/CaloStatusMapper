@@ -1,0 +1,91 @@
+/// ---------------------------------------------------------------------------
+/*! \file Fun4All_TestCaloStatusMapper.C
+ *  Derek Anderson
+ *  05.16.2024
+ *
+ *  A small Fun4All macro to test the 'CaloStatusMapper' module.
+ */
+// ----------------------------------------------------------------------------
+
+#define FUN4ALL_TESTCALOSTATUSMAPPER_C
+
+// c++ utilities
+#include <string>
+// ffa modules
+#include <ffamodules/FlagHandler.h>
+#include <ffamodules/CDBInterface.h>
+// fun4all libraries
+#include <fun4all/SubsysReco.h>
+#include <fun4all/Fun4AllServer.h>
+#include <fun4all/Fun4AllInputManager.h>
+#include <fun4all/Fun4AllDstInputManager.h>
+#include <fun4allraw/Fun4AllPrdfInputManager.h>
+// phool utilities
+#include <phool/recoConsts.h>
+// module definitions
+#include </sphenix/user/danderson/install/include/calostatusmapper/CaloStatusMapper.h>
+
+R__LOAD_LIBRARY(libcalo_io.so)
+R__LOAD_LIBRARY(libcalotrigger.so)
+R__LOAD_LIBRARY(libfun4all.so)
+R__LOAD_LIBRARY(libfun4allraw.so)
+R__LOAD_LIBRARY(/sphenix/user/danderson/install/lib/libcalostatusmapper.so)
+
+
+
+// macro body -----------------------------------------------------------------
+
+void Fun4All_TestCaloStatusMapper(
+  const int runnumber = 41725,
+  const int nEvents = 0,
+  const int verbosity = 5,
+  const std::string inFile = "input/DST_PRDF-00041725-0000.root",
+  const std::string lutFile = "/sphenix/user/dlis/Projects/macros/CDBTest/emcal_ll1_lut.root"
+) {
+
+  // options ------------------------------------------------------------------
+
+  // trigger cluster maker options
+  CaloStatusMapperConfig cfg_mapper {
+    .debug = true
+  };
+
+  // initialize f4a -----------------------------------------------------------
+
+  Fun4AllServer* f4a = Fun4AllServer::instance();
+  CDBInterface*  cdb = CDBInterface::instance();
+  recoConsts*    rc  = recoConsts::instance();
+  f4a -> Verbosity(verbosity);
+  cdb -> Verbosity(verbosity);
+
+  // grab lookup tables
+  rc -> set_StringFlag("CDB_GLOBALTAG", "ProdA_2023");
+  rc -> set_uint64Flag("TIMESTAMP", runnumber);
+
+  // register inputs/outputs --------------------------------------------------
+
+  Fun4AllPrdfInputManager* input = new Fun4AllPrdfInputManager("InputPrdfManager");
+  input -> fileopen(inFile);
+  f4a   -> registerInputManager(input);
+
+  // register subsystem reco modules ------------------------------------------
+
+  // map out status of calo towers
+  CaloStatusMapper* mapper = new CaloStatusMapper("CaloStatusMapper");
+  mapper -> SetConfig(cfg_mapper);
+  f4a   -> registerSubsystem(mapper);
+
+  // run modules and exit -----------------------------------------------------
+
+  // run4all
+  f4a -> run(nEvents);
+  f4a -> End();
+  delete f4a;
+
+  // exit
+  gSystem -> Exit(0);
+  return;
+
+}
+
+// end ------------------------------------------------------------------------
