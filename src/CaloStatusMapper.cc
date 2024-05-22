@@ -138,23 +138,6 @@ void CaloStatusMapper::BuildHistograms() {
 
 
 // ----------------------------------------------------------------------------
-//! Initialize output TTree
-// ----------------------------------------------------------------------------
-void CaloStatusMapper::InitOutTree() {
-
-  // print debug message
-  if (m_config.debug && (Verbosity() > 0)) {
-    std::cout << "CaloStatusMapper::InitOutTree() Creating output tree" << std::endl;
-  }
-
-  /* TODO fill in */
-  return;
-
-}  // end 'InitOutTree()'
-
-
-
-// ----------------------------------------------------------------------------
 //! Grab input nodes
 // ----------------------------------------------------------------------------
 void CaloStatusMapper::GrabNodes(PHCompositeNode* topNode) {

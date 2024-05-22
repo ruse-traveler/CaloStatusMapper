@@ -70,9 +70,9 @@ class CaloStatusMapper : public SubsysReco {
   private:
 
     // histogram accessors
-    enum Calo {EM, IH, OH};
-    enum H1D {Num, Eta, Phi};
-    enum H2D (EtaVsPhi};
+    enum Calo {EMC, IHC, OHC, ZDC, SEPD};
+    enum H1D  {Num, Eta, Phi};
+    enum H2D  {EtaVsPhi};
 
     // private methods
     void BuildHistograms();
