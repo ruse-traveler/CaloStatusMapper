@@ -14,7 +14,8 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <utility>
+// calo base
+#include <calobase/TowerInfov2.h>
 // f4a libraries
 #include <fun4all/Fun4AllReturnCodes.h>
 // phool libraries
@@ -147,7 +148,7 @@ void CaloStatusMapper::GrabNodes(PHCompositeNode* topNode) {
     std::cout << "CaloStatusMapper::GrabNodes(PHCompositeNode*) Grabbing input nodes" << std::endl;
   }
 
-  /* TODO fill in */
+
   return;
 
 }  // end 'GrabNodes(PHCompositeNode*)'

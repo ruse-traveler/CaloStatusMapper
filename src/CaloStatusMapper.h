@@ -1,5 +1,5 @@
 ///  --------------------------------------------------------------------------
-/*! \file   CaloStatusMapperLinkDef.h
+/*! \file   CaloStatusMapper.h
  *  \author Derek Anderson
  *  \date   05.22.2024
  *
@@ -14,10 +14,13 @@
 // c++ utilities
 #include <string>
 #include <vector>
+#include <utility>
 // calo base
-#include <calobase/RawClusterContainer.h>
+#include <calobase/TowerInfoContainerv2.h>
 // f4a libraries
 #include <fun4all/SubsysReco.h>
+// module definitions
+#include "CaloStatusMapperDefs.h"
 
 // forward declarations
 class PHCompositeNode;
@@ -36,7 +39,13 @@ struct CaloStatusMapperConfig {
   bool debug = true;
 
   // input nodes
-  /* will go here */
+  std::vector<std::pair<std::string, int>> inNodeNames = {
+    {"TOWERINFO_CALIB_CEMC",    CaloStatusMapperDefs::Calo::EMC},
+    {"TOWERINFO_CALIB_HCALIN",  CaloStatusMapperDefs::Calo::IHC},
+    {"TOWERINFO_CALIB_HCALOUT", CaloStatusMapperDefs::Calo::OHC},
+    {"TOWERINFO_CALIB_ZDC",     CaloStatusMapperDefs::Calo::ZDC},
+    {"TOWERS_SEPD",             CaloStatusMapperDefs::Calo::SEPD}
+  };
 
 };
 
@@ -69,11 +78,6 @@ class CaloStatusMapper : public SubsysReco {
 
   private:
 
-    // histogram accessors
-    enum Calo {EMC, IHC, OHC, ZDC, SEPD};
-    enum H1D  {Num, Eta, Phi};
-    enum H2D  {EtaVsPhi};
-
     // private methods
     void BuildHistograms();
     void GrabNodes(PHCompositeNode* topNode);
@@ -85,10 +89,13 @@ class CaloStatusMapper : public SubsysReco {
     // f4a members
     Fun4AllHistoManager* m_manager = NULL;
 
+    // input nodes
+    std::vector<TowerInfoContainer*> m_vecInNodes;
+
     // module configuration
     CaloStatusMapperConfig m_config;
 
-};
+};  // end CaloStatusMapper
 
 #endif
 

@@ -14,7 +14,8 @@ AM_CPPFLAGS = \
   -I$(ROOTSYS)/include
 
 pkginclude_HEADERS = \
-  CaloStatusMapper.h
+  CaloStatusMapper.h \
+  CaloStatusMapperDefs.h
 
 if ! MAKEROOT6
   ROOT5_DICTS = \
