@@ -22,6 +22,8 @@
 #include <fun4allraw/Fun4AllPrdfInputManager.h>
 // phool utilities
 #include <phool/recoConsts.h>
+// qa utils
+#include <qautils/QAHistManagerDef.h>
 // module definitions
 #include </sphenix/user/danderson/install/include/calostatusmapper/CaloStatusMapper.h>
 
@@ -39,8 +41,8 @@ void Fun4All_TestCaloStatusMapper(
   const int runnumber = 41725,
   const int nEvents = 0,
   const int verbosity = 5,
-  const std::string inFile = "input/DST_PRDF-00041725-0000.root",
-  const std::string lutFile = "/sphenix/user/dlis/Projects/macros/CDBTest/emcal_ll1_lut.root"
+  const std::string inFile = "/sphenix/lustre01/sphnxpro/commissioning/slurp/caloy2test/run_00042000_00042100/DST_CALO_run2pp_new_2024p001-00042072-0121.root",
+  const std::string outFile = "test_qa.root"
 ) {
 
   // options ------------------------------------------------------------------
@@ -80,9 +82,12 @@ void Fun4All_TestCaloStatusMapper(
   // run4all
   f4a -> run(nEvents);
   f4a -> End();
+
+  // save qa output and exit
+  QAHistManagerDef::saveQARootFile(outFile);
   delete f4a;
 
-  // exit
+  // close and  exit
   gSystem -> Exit(0);
   return;
 
