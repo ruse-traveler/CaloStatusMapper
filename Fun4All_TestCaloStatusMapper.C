@@ -19,27 +19,25 @@
 #include <fun4all/Fun4AllServer.h>
 #include <fun4all/Fun4AllInputManager.h>
 #include <fun4all/Fun4AllDstInputManager.h>
-#include <fun4allraw/Fun4AllPrdfInputManager.h>
 // phool utilities
 #include <phool/recoConsts.h>
 // qa utils
 #include <qautils/QAHistManagerDef.h>
 // module definitions
-#include </sphenix/user/danderson/install/include/calostatusmapper/CaloStatusMapper.h>
+#include <calostatusmapper/CaloStatusMapper.h>
 
 R__LOAD_LIBRARY(libcalo_io.so)
-R__LOAD_LIBRARY(libcalotrigger.so)
 R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY(libfun4allraw.so)
-R__LOAD_LIBRARY(/sphenix/user/danderson/install/lib/libcalostatusmapper.so)
+R__LOAD_LIBRARY(libcalostatusmapper.so)
 
 
 
 // macro body -----------------------------------------------------------------
 
 void Fun4All_TestCaloStatusMapper(
-  const int runnumber = 41725,
-  const int nEvents = 0,
+  const int runnumber = 43273,
+  const int nEvents = 10,
   const int verbosity = 5,
   const std::string inFile = "/sphenix/lustre01/sphnxpro/commissioning/slurp/caloy2test/run_00042000_00042100/DST_CALO_run2pp_new_2024p001-00042072-0121.root",
   const std::string outFile = "test_qa.root"
@@ -61,12 +59,12 @@ void Fun4All_TestCaloStatusMapper(
   cdb -> Verbosity(verbosity);
 
   // grab lookup tables
-  rc -> set_StringFlag("CDB_GLOBALTAG", "ProdA_2023");
+  rc -> set_StringFlag("CDB_GLOBALTAG", "ProdA_2024");
   rc -> set_uint64Flag("TIMESTAMP", runnumber);
 
   // register inputs/outputs --------------------------------------------------
 
-  Fun4AllPrdfInputManager* input = new Fun4AllPrdfInputManager("InputPrdfManager");
+  Fun4AllDstInputManager* input = new Fun4AllDstInputManager("InputDstManager");
   input -> fileopen(inFile);
   f4a   -> registerInputManager(input);
 
@@ -84,7 +82,7 @@ void Fun4All_TestCaloStatusMapper(
   f4a -> End();
 
   // save qa output and exit
-  QAHistManagerDef::saveQARootFile(outFile);
+  //QAHistManagerDef::saveQARootFile(outFile);  // TODO uncomment when ready
   delete f4a;
 
   // close and  exit
