@@ -14,7 +14,6 @@
 // c++ utilities
 #include <string>
 #include <vector>
-#include <utility>
 // calo base
 #include <calobase/TowerInfoContainerv2.h>
 // f4a libraries
@@ -25,8 +24,6 @@
 // forward declarations
 class PHCompositeNode;
 class QAHistManagerHistDef;
-class TH1D;
-class TH2D;
 
 
 
@@ -39,7 +36,7 @@ struct CaloStatusMapperConfig {
   bool debug = true;
 
   // input nodes
-  std::vector<std::pair<std::string, int>> inNodeNames = {
+  std::vector<CaloStatusMapperDefs::NodeDef> inNodeNames = {
     {"TOWERINFO_CALIB_CEMC",    CaloStatusMapperDefs::Calo::EMC},
     {"TOWERINFO_CALIB_HCALIN",  CaloStatusMapperDefs::Calo::IHC},
     {"TOWERINFO_CALIB_HCALOUT", CaloStatusMapperDefs::Calo::OHC},
@@ -73,6 +70,7 @@ class CaloStatusMapper : public SubsysReco {
 
     // f4a methods
     int Init(PHCompositeNode* topNode)          override;
+    int InitRun(PHCompositeNode* topNode)       override;  // FIXME might not need...
     int process_event(PHCompositeNode* topNode) override;
     int End(PHCompositeNode* topNode)           override;
 
@@ -83,14 +81,14 @@ class CaloStatusMapper : public SubsysReco {
     void GrabNodes(PHCompositeNode* topNode);
 
     // output histograms
-    std::vector<std::vector<TH1D*>> vecHist1D;
-    std::vector<std::vector<TH2D*>> vecHist2D;
+    CaloStatusMapperDefs::H1DVec vecHist1D;
+    CaloStatusMapperDefs::H2DVec vecHist2D;
 
     // f4a members
     Fun4AllHistoManager* m_manager = NULL;
 
     // input nodes
-    std::vector<TowerInfoContainer*> m_vecInNodes;
+    std::vector<TowerInfoContainer*> m_inNodes;
 
     // module configuration
     CaloStatusMapperConfig m_config;

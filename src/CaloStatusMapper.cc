@@ -45,6 +45,9 @@ CaloStatusMapper::CaloStatusMapper(const std::string &name) : SubsysReco(name) {
     std::cout << "CaloStatusMapper::CaloStatusMapper(const std::string &name) Calling ctor" << std::endl;
   }
 
+  // make sure node vector is empty
+  m_inNodes.clear();
+
 }  // end ctor
 
 
@@ -84,6 +87,22 @@ int CaloStatusMapper::Init(PHCompositeNode* topNode) {
 
 
 // ----------------------------------------------------------------------------
+//! Get ready for a new run
+// ----------------------------------------------------------------------------
+int CaloStatusMapper::InitRun(PHCompositeNode* topNode) {
+
+  if (m_config.debug) {
+    std::cout << "CaloStatusMapper::InitRun(PHCompositeNode *topNode) Preparing for new run" << std::endl;
+  }
+
+  /* TODO fill in */
+  return Fun4AllReturnCodes::EVENT_OK;
+
+}  // end 'Init(PHCompositeNode*)'
+
+
+
+// ----------------------------------------------------------------------------
 //! Grab inputs and fills histograms
 // ----------------------------------------------------------------------------
 int CaloStatusMapper::process_event(PHCompositeNode* topNode) {
@@ -95,7 +114,28 @@ int CaloStatusMapper::process_event(PHCompositeNode* topNode) {
   // grab input nodes
   GrabNodes(topNode);
 
-  /* TODO fill in rest */
+  // loop over input nodes
+  for (TowerInfoContainer* towers : m_inNodes) {
+
+    uint32_t iEtaBig = 0;
+    uint32_t iPhiBig = 0;
+
+    // loop over towers
+    for (size_t iTower = 0; iTower < towers -> size(); ++iTower) {
+
+       // grab eta, phi indices
+       const uint32_t key  = towers -> encode_key(iTower);
+       const uint32_t iEta = towers -> getTowerEtaBin(key);
+       const uint32_t iPhi = towers -> getTowerPhiBin(key);
+
+       if (iEta > iEtaBig) iEtaBig = iEta;
+       if (iPhi > iPhiBig) iPhiBig = iPhi;
+
+       // get type 
+ 
+
+    }  // end tower loop
+  }  // end node loop
   return Fun4AllReturnCodes::EVENT_OK;
 
 }  // end 'process_event(PHCompositeNode*)'
@@ -112,7 +152,6 @@ int CaloStatusMapper::End(PHCompositeNode *topNode) {
   }
 
   /* TODO fill in */
-
   return Fun4AllReturnCodes::EVENT_OK;
 
 }  // end 'End(PHCompositeNode*)'
@@ -131,7 +170,14 @@ void CaloStatusMapper::BuildHistograms() {
     std::cout << "CaloStatusMapper::BuildHistograms() Creating histograms" << std::endl;
   }
 
-  /* TODO fill in */
+  // create need space for each node
+  vecHist1D.resize( m_config.inNodeNames.size() );
+  vecHist2D.resize( m_config.inNodeNames.size() );
+
+  // loop over nodes
+  for (auto inNodeName : m_config.inNodeNames) {
+    /* TODO fill in */
+  }
   return;
 
 }  // end 'InitOutFile()'
@@ -148,7 +194,19 @@ void CaloStatusMapper::GrabNodes(PHCompositeNode* topNode) {
     std::cout << "CaloStatusMapper::GrabNodes(PHCompositeNode*) Grabbing input nodes" << std::endl;
   }
 
+  // make sure node vector is empty
+  m_inNodes.clear();
 
+  // loop over nodes to grab
+  for (auto inNodeName : m_config.inNodeNames) {
+    m_inNodes.push_back(
+      findNode::getClass<TowerInfoContainer>(topNode, inNodeName.first)
+    );
+    if (!m_inNodes.back()) {
+      std::cerr << PHWHERE << ":" << " PANIC! Not able to grab node " << inNodeName.first << "! Aborting!" << std::endl;
+      assert(m_inNodes.back());
+    }
+  }  // end input node name loop
   return;
 
 }  // end 'GrabNodes(PHCompositeNode*)'
