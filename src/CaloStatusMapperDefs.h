@@ -52,29 +52,40 @@ namespace CaloStatusMapperDefs {
 
   // constants ----------------------------------------------------------------
 
-  inline uint32_t const& NEMCTow() {
-    static uint32_t nEMCTow = 24576;
-    return nEMCTow;
+  // total no. of towers
+  inline std::vector<uint32_t> const& NTowers() {
+    static std::vector<uint32_t> nTowers = {
+      24576,
+      1536,
+      1536,
+      52,
+      744
+    };
+    return nTowers;
   }
 
-  inline uint32_t const& NIHCTow() {
-    static uint32_t nIHCTow = 1536;
-    return nIHCTow;
+  // total no. of towers along eta
+  inline std::vector<uint32_t> const& NEta() {
+    static std::vector<uint32_t> nEta = {
+      96,
+      24,
+      24,
+      52,  // FIXME this isn't the best representation for the ZDC
+      744  // FIXME same for the sEPD...
+    };
+    return nEta;
   }
 
-  inline uint32_t const& NOHCTow() {
-    static uint32_t nOHCTow = 1536;
-    return nOHCTow;
-  }
-
-  inline uint32_t const& NZDCTow() {
-    static uint32_t nZDCTow = 3;
-    return nZDCTow;
-  }
-
-  inline uint32_t const& NSEPDTow() {
-    static uint32_t nSEPDTow = 744;
-    return nSEPDTow;
+  // total no. of towers along phi
+  inline std::vector<uint32_t> const& NPhi() {
+    static std::vector<uint32_t> nPhi = {
+      256,
+      64,
+      64,
+      52,  // FIXME like with eta, this isn't good for the ZDC
+      744  // FIXME ditto for the sEPD...
+    };
+    return nPhi;
   }
 
 
@@ -82,7 +93,7 @@ namespace CaloStatusMapperDefs {
   // histogram definitions ----------------------------------------------------
 
   // status labels
-  inline std::vector<std::string>& StatLabels() {
+  inline std::vector<std::string> const& StatLabels() {
     static std::vector<std::string> statLabels = {
       "Good",
       "Bad",
@@ -95,7 +106,7 @@ namespace CaloStatusMapperDefs {
   }
 
   // 1D histogram labels
-  inline std::vector<std::string>& H1DLabels() {
+  inline std::vector<std::string> const& H1DLabels() {
     static std::vector<std::string> labelsH1D = {
       "NumberPerEvt",
       "NumberPerEta",
@@ -105,23 +116,47 @@ namespace CaloStatusMapperDefs {
   }
 
   // 2D histogram labels
-  inline std::vector<std::string>& H2DLabels() {
+  inline std::vector<std::string> const& H2DLabels() {
     static std::vector<std::string> labelsH2D = {
       "EtaVsPhi"
     };
     return labelsH2D;
   }
 
-  // binning definitions
-  inline std::vector<BinDef>& NumBins() {
+  // total number axis definitions
+  inline std::vector<BinDef> const& NumBins() {
     static std::vector<BinDef> numBins = {
-      std::make_tuple(NEMCTow(),  -0.5, NEMCTow() - 0.5),
-      std::make_tuple(NIHCTow(),  -0.5, NIHCTow() - 0.5),
-      std::make_tuple(NOHCTow(),  -0.5, NOHCTow() - 0.5),
-      std::make_tuple(NZDCTow(),  -0.5, NZDCTow() - 0.5),
-      std::make_tuple(NSEPDTow(), -0.5, NSEPDTow() - 0.5)
+      std::make_tuple(NTowers()[Calo::EMC],  -0.5, NTowers()[Calo::EMC] - 0.5),
+      std::make_tuple(NTowers()[Calo::IHC],  -0.5, NTowers()[Calo::IHC] - 0.5),
+      std::make_tuple(NTowers()[Calo::OHC],  -0.5, NTowers()[Calo::OHC] - 0.5),
+      std::make_tuple(NTowers()[Calo::ZDC],  -0.5, NTowers()[Calo::ZDC] - 0.5),
+      std::make_tuple(NTowers()[Calo::SEPD], -0.5, NTowers()[Calo::SEPD] - 0.5)
     };
     return numBins;
+  }
+
+  // number per eta axis definitions
+  inline std::vector<BinDef> const& EtaBins() {
+    static std::vector<BinDef> etaBins = {
+      std::make_tuple(NEta()[Calo::EMC],  -0.5, NEta()[Calo::EMC] - 0.5),
+      std::make_tuple(NEta()[Calo::IHC],  -0.5, NEta()[Calo::IHC] - 0.5),
+      std::make_tuple(NEta()[Calo::OHC],  -0.5, NEta()[Calo::OHC] - 0.5),
+      std::make_tuple(NEta()[Calo::ZDC],  -0.5, NEta()[Calo::ZDC] - 0.5),
+      std::make_tuple(NEta()[Calo::SEPD], -0.5, NEta()[Calo::SEPD] - 0.5)
+    };
+    return etaBins;
+  }
+
+  // number per eta axis definitions
+  inline std::vector<BinDef> const& PhiBins() {
+    static std::vector<BinDef> phiBins = {
+      std::make_tuple(NPhi()[Calo::EMC],  -0.5, NPhi()[Calo::EMC] - 0.5),
+      std::make_tuple(NPhi()[Calo::IHC],  -0.5, NPhi()[Calo::IHC] - 0.5),
+      std::make_tuple(NPhi()[Calo::OHC],  -0.5, NPhi()[Calo::OHC] - 0.5),
+      std::make_tuple(NPhi()[Calo::ZDC],  -0.5, NPhi()[Calo::ZDC] - 0.5),
+      std::make_tuple(NPhi()[Calo::SEPD], -0.5, NPhi()[Calo::SEPD] - 0.5)
+    };
+    return phiBins;
   }
 
 }  // end CaloStatusMapperDefs namespace

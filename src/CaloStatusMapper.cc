@@ -80,6 +80,7 @@ int CaloStatusMapper::Init(PHCompositeNode* topNode) {
     std::cout << "CaloStatusMapper::Init(PHCompositeNode *topNode) Initializing" << std::endl;
   }
 
+  InitHistManager();
   BuildHistograms();
   return Fun4AllReturnCodes::EVENT_OK;
 
@@ -162,6 +163,27 @@ int CaloStatusMapper::End(PHCompositeNode *topNode) {
 // private methods ============================================================
 
 // ----------------------------------------------------------------------------
+//! Initialize histogram manager
+// ----------------------------------------------------------------------------
+void CaloStatusMapper::InitHistManager() {
+
+  // print debug message
+  if (m_config.debug && (Verbosity() > 0)) {
+    std::cout << "CaloStatusMapper::InitHistManager() Initializing histogram manager" << std::endl;
+  }
+
+  m_manager = QAHistManagerDef::getHistoManager();
+  if (!m_manager) {
+    std::cerr << PHWHERE << ": PANIC! Couldn't grab histogram manager!" << std::endl;
+    assert(m_manager);
+  }
+  return;
+
+}  // end 'InitHistManager()'
+
+
+
+// ----------------------------------------------------------------------------
 //! Build histograms
 // ----------------------------------------------------------------------------
 void CaloStatusMapper::BuildHistograms() {
@@ -194,16 +216,16 @@ void CaloStatusMapper::BuildHistograms() {
         histName += m_config.inNodeNames[iNode].first;
 
         // grab binning for histogram
-        const auto& binDef1D = CaloStatusMapperDefs::NumBins()[ m_config.inNodeNames[iNode].second ];
+        const auto& numBinDefs = CaloStatusMapperDefs::NumBins().at( m_config.inNodeNames[iNode].second );
 
         // create histogram
         m_vecHist1D[iNode][iStatus].push_back(
           new TH1D(
             histName.data(),
             "",  // TODO add axis labels
-            std::get<0>(binDef1D),
-            std::get<1>(binDef1D),
-            std::get<2>(binDef1D)
+            std::get<0>(numBinDefs),
+            std::get<1>(numBinDefs),
+            std::get<2>(numBinDefs)
           )
         );
 
@@ -219,17 +241,42 @@ void CaloStatusMapper::BuildHistograms() {
       // make 2d histograms
       for (const std::string& h2d : vecH2DLabels) {
 
-        /* TODO fill in */
-        std::cout << "TEST h2d = " << h2d << std::endl;
+        // construct name
+        std::string histName = "h" + vecStatLabels[iStatus] + h2d + "_";
+        histName += m_config.inNodeNames[iNode].first;
 
-      }  // end 2d histogramloop
+        // grab binning for histogram
+        const auto& etaBinDefs = CaloStatusMapperDefs::EtaBins().at( m_config.inNodeNames[iNode].second );
+        const auto& phiBinDefs = CaloStatusMapperDefs::PhiBins().at( m_config.inNodeNames[iNode].second );
+
+
+        // create histogram
+        m_vecHist2D[iNode][iStatus].push_back(
+          new TH2D(
+            histName.data(),
+            "",  // TODO add axis labels
+            std::get<0>(phiBinDefs),
+            std::get<1>(phiBinDefs),
+            std::get<2>(phiBinDefs),
+            std::get<0>(etaBinDefs),
+            std::get<1>(etaBinDefs),
+            std::get<2>(etaBinDefs)
+          )
+        );
+
+        // if not null, register histogram with manager
+        if (!m_vecHist2D[iNode][iStatus].back()) {
+          std::cerr << PHWHERE << ": PANIC! Not able to make histogram " << histName << "! Aborting!" << std::endl;
+          assert(m_vecHist2D[iNode][iStatus].back());
+        } else {
+          m_manager -> registerHisto( m_vecHist2D[iNode][iStatus].back() );
+        }
+      }  // end 2d histogram loop
     }  // end status loop
   }  // end node loop
-
-  // register histograms
   return;
 
-}  // end 'InitOutFile()'
+}  // end 'BuildHistograms()'
 
 
 

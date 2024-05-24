@@ -77,6 +77,7 @@ class CaloStatusMapper : public SubsysReco {
   private:
 
     // private methods
+    void InitHistManager();
     void BuildHistograms();
     void GrabNodes(PHCompositeNode* topNode);
 
