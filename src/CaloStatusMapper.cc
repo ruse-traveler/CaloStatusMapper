@@ -117,24 +117,34 @@ int CaloStatusMapper::process_event(PHCompositeNode* topNode) {
   GrabNodes(topNode);
 
   // loop over input nodes
-  for (TowerInfoContainer* towers : m_inNodes) {
-
-    uint32_t iEtaBig = 0;
-    uint32_t iPhiBig = 0;
+  for (size_t iNode = 0; iNode < m_inNodes.size(); ++iNode) {
 
     // loop over towers
+    TowerInfoContainer* towers = m_inNodes[iNode];
     for (size_t iTower = 0; iTower < towers -> size(); ++iTower) {
 
        // grab eta, phi indices
-       const uint32_t key  = towers -> encode_key(iTower);
-       const uint32_t iEta = towers -> getTowerEtaBin(key);
-       const uint32_t iPhi = towers -> getTowerPhiBin(key);
+       const int32_t key  = towers -> encode_key(iTower);
+       const int32_t iEta = towers -> getTowerEtaBin(key);
+       const int32_t iPhi = towers -> getTowerPhiBin(key);
 
-       if (iEta > iEtaBig) iEtaBig = iEta;
-       if (iPhi > iPhiBig) iPhiBig = iPhi;
+       // get status
+       const int status = CaloStatusMapperDefs::GetTowerStatus(
+         towers -> get_tower_at_channel(iTower)
+       );
+       if (status == CaloStatusMapperDefs::Stat::Unknown) {
+         std::cout << PHWHERE << ": Warning! Tower has an unknown status!\n"
+                   << "  channel = " << iTower << ", key = " << key << "\n"
+                   << "  node = " << m_config.inNodeNames[iNode].first
+                   << std::endl; 
+         continue;
+       } 
 
-       // get type 
- 
+       // fill histograms accordingly
+       m_vecHist1D[iNode][status][CaloStatusMapperDefs::H1D::Num]      -> Fill(key);
+       m_vecHist1D[iNode][status][CaloStatusMapperDefs::H1D::Eta]      -> Fill(iEta);
+       m_vecHist1D[iNode][status][CaloStatusMapperDefs::H1D::Phi]      -> Fill(iPhi);
+       m_vecHist2D[iNode][status][CaloStatusMapperDefs::H2D::EtaVsPhi] -> Fill(iPhi, iEta);
 
     }  // end tower loop
   }  // end node loop
@@ -153,7 +163,7 @@ int CaloStatusMapper::End(PHCompositeNode *topNode) {
     std::cout << "CaloStatusMapper::End(PHCompositeNode *topNode) This is the End..." << std::endl;
   }
 
-  /* TODO fill in */
+  /* nothing to do */
   return Fun4AllReturnCodes::EVENT_OK;
 
 }  // end 'End(PHCompositeNode*)'
@@ -203,35 +213,57 @@ void CaloStatusMapper::BuildHistograms() {
   m_vecHist2D.resize( m_config.inNodeNames.size() );
   for (size_t iNode = 0; iNode < m_config.inNodeNames.size(); ++iNode) {
 
+    // grab node name & type of calo
+    const std::string nodeName = m_config.inNodeNames[iNode].first;
+    const int         caloType = m_config.inNodeNames[iNode].second;
+
     // loop over status labels
     m_vecHist1D[iNode].resize( vecStatLabels.size() );
     m_vecHist2D[iNode].resize( vecStatLabels.size() );
     for (size_t iStatus = 0; iStatus < vecStatLabels.size(); ++iStatus) {
 
       // make 1d histograms
-      for (const std::string& h1d : vecH1DLabels) {
+      for (size_t iHist1D = 0; iHist1D < vecH1DLabels.size(); ++iHist1D) {
 
         // construct name
-        std::string histName = "h" + vecStatLabels[iStatus] + h1d + "_";
-        histName += m_config.inNodeNames[iNode].first;
+        std::string histName = "h" + vecStatLabels[iStatus] + vecH1DLabels[iHist1D] + "_" + nodeName;
 
         // grab binning for histogram
-        const auto& numBinDefs = CaloStatusMapperDefs::NumBins().at( m_config.inNodeNames[iNode].second );
+        CaloStatusMapperDefs::BinDef binDef1D;
+        switch (iHist1D) {
+
+          case CaloStatusMapperDefs::H1D::Phi:
+            binDef1D = CaloStatusMapperDefs::PhiBins().at(caloType);
+            break;
+
+          case CaloStatusMapperDefs::H1D::Eta:
+            binDef1D = CaloStatusMapperDefs::EtaBins().at(caloType);
+            break;
+
+          case CaloStatusMapperDefs::H1D::Num:
+            [[fallthrough]];
+
+          default:
+            binDef1D = CaloStatusMapperDefs::NumBins().at(caloType);
+            break;
+        }
 
         // create histogram
         m_vecHist1D[iNode][iStatus].push_back(
           new TH1D(
             histName.data(),
             "",  // TODO add axis labels
-            std::get<0>(numBinDefs),
-            std::get<1>(numBinDefs),
-            std::get<2>(numBinDefs)
+            std::get<0>(binDef1D),
+            std::get<1>(binDef1D),
+            std::get<2>(binDef1D)
           )
         );
 
         // if not null, register histogram with manager
         if (!m_vecHist1D[iNode][iStatus].back()) {
-          std::cerr << PHWHERE << ": PANIC! Not able to make histogram " << histName << "! Aborting!" << std::endl;
+          std::cerr << PHWHERE << ": PANIC! Not able to make histogram " << histName
+                    << "! Aborting!"
+                    << std::endl;
           assert(m_vecHist1D[iNode][iStatus].back());
         } else {
           m_manager -> registerHisto( m_vecHist1D[iNode][iStatus].back() );
@@ -239,28 +271,36 @@ void CaloStatusMapper::BuildHistograms() {
       }  // end 1d histogram loop
 
       // make 2d histograms
-      for (const std::string& h2d : vecH2DLabels) {
+      for (size_t iHist2D = 0; iHist2D < vecH2DLabels.size(); ++iHist2D) {
 
         // construct name
-        std::string histName = "h" + vecStatLabels[iStatus] + h2d + "_";
-        histName += m_config.inNodeNames[iNode].first;
+        std::string histName = "h" + vecStatLabels[iStatus] + vecH2DLabels[iHist2D] + "_" + nodeName;
 
         // grab binning for histogram
-        const auto& etaBinDefs = CaloStatusMapperDefs::EtaBins().at( m_config.inNodeNames[iNode].second );
-        const auto& phiBinDefs = CaloStatusMapperDefs::PhiBins().at( m_config.inNodeNames[iNode].second );
+        CaloStatusMapperDefs::BinDef xBinDefs2D;
+        CaloStatusMapperDefs::BinDef yBinDefs2D;
+        switch (iHist2D) {
 
+          case CaloStatusMapperDefs::H2D::EtaVsPhi:
+            [[fallthrough]];
+
+          default:
+            xBinDefs2D = CaloStatusMapperDefs::PhiBins().at(caloType);
+            yBinDefs2D = CaloStatusMapperDefs::EtaBins().at(caloType);
+            break;
+        }
 
         // create histogram
         m_vecHist2D[iNode][iStatus].push_back(
           new TH2D(
             histName.data(),
             "",  // TODO add axis labels
-            std::get<0>(phiBinDefs),
-            std::get<1>(phiBinDefs),
-            std::get<2>(phiBinDefs),
-            std::get<0>(etaBinDefs),
-            std::get<1>(etaBinDefs),
-            std::get<2>(etaBinDefs)
+            std::get<0>(xBinDefs2D),
+            std::get<1>(xBinDefs2D),
+            std::get<2>(xBinDefs2D),
+            std::get<0>(yBinDefs2D),
+            std::get<1>(yBinDefs2D),
+            std::get<2>(yBinDefs2D)
           )
         );
 

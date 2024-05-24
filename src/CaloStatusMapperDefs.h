@@ -16,6 +16,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+// calobase libraries
+#include <calobase/TowerInfov2.h>
 
 // forward declarations
 class TH1D;
@@ -44,7 +46,7 @@ namespace CaloStatusMapperDefs {
   // enums --------------------------------------------------------------------
 
   enum Calo {EMC, IHC, OHC, ZDC, SEPD};
-  enum Stat {Good, Hot, BadTime, BadChi, NotInstr, NoCalib};
+  enum Stat {Good, Hot, BadTime, BadChi, NotInstr, NoCalib, Unknown};
   enum H1D  {Num, Eta, Phi};
   enum H2D  {EtaVsPhi};
 
@@ -158,6 +160,30 @@ namespace CaloStatusMapperDefs {
     };
     return phiBins;
   }
+
+
+
+  // helper methods -----------------------------------------------------------
+
+  int GetTowerStatus(TowerInfo* tower) {
+
+    int status = Stat::Unknown;
+    if (tower -> get_isHot()) {
+      status = Stat::Hot;
+    } else if (tower -> get_isBadTime()) {
+      status = Stat::BadTime;
+    } else if (tower -> get_isBadChi2()) {
+      status = Stat::BadChi;
+    } else if (tower -> get_isNotInstr()) {
+      status = Stat::NotInstr;
+    } else if (tower -> get_isNoCalib()) {
+      status = Stat::NoCalib;
+    } else {
+      status = Stat::Good;
+    }
+    return status;
+
+  }  // end 'GetTowerStatus(TowerInfov2*)'
 
 }  // end CaloStatusMapperDefs namespace
 
