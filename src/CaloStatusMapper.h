@@ -81,8 +81,8 @@ class CaloStatusMapper : public SubsysReco {
     void GrabNodes(PHCompositeNode* topNode);
 
     // output histograms
-    CaloStatusMapperDefs::H1DVec vecHist1D;
-    CaloStatusMapperDefs::H2DVec vecHist2D;
+    CaloStatusMapperDefs::H1DVec m_vecHist1D;
+    CaloStatusMapperDefs::H2DVec m_vecHist2D;
 
     // f4a members
     Fun4AllHistoManager* m_manager = NULL;

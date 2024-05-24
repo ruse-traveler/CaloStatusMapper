@@ -115,10 +115,10 @@ namespace CaloStatusMapperDefs {
   // binning definitions
   inline std::vector<BinDef>& NumBins() {
     static std::vector<BinDef> numBins = {
-      std::make_tuple(NEMCTow(), -0.5,  NEMCTow() - 0.5),
-      std::make_tuple(NIHCTow(), -0.5,  NIHCTow() - 0.5),
-      std::make_tuple(NOHCTow(), -0.5,  NOHCTow() - 0.5),
-      std::make_tuple(NZDCTow(), -0.5,  NZDCTow() - 0.5),
+      std::make_tuple(NEMCTow(),  -0.5, NEMCTow() - 0.5),
+      std::make_tuple(NIHCTow(),  -0.5, NIHCTow() - 0.5),
+      std::make_tuple(NOHCTow(),  -0.5, NOHCTow() - 0.5),
+      std::make_tuple(NZDCTow(),  -0.5, NZDCTow() - 0.5),
       std::make_tuple(NSEPDTow(), -0.5, NSEPDTow() - 0.5)
     };
     return numBins;

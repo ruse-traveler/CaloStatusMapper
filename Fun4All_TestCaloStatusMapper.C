@@ -82,7 +82,7 @@ void Fun4All_TestCaloStatusMapper(
   f4a -> End();
 
   // save qa output and exit
-  //QAHistManagerDef::saveQARootFile(outFile);  // TODO uncomment when ready
+  QAHistManagerDef::saveQARootFile(outFile);  // TODO uncomment when ready
   delete f4a;
 
   // close and  exit

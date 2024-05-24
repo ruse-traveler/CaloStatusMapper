@@ -18,6 +18,7 @@
 #include <calobase/TowerInfov2.h>
 // f4a libraries
 #include <fun4all/Fun4AllReturnCodes.h>
+#include <fun4all/Fun4AllHistoManager.h>
 // phool libraries
 #include <phool/getClass.h>
 #include <phool/phool.h>
@@ -170,14 +171,62 @@ void CaloStatusMapper::BuildHistograms() {
     std::cout << "CaloStatusMapper::BuildHistograms() Creating histograms" << std::endl;
   }
 
-  // create need space for each node
-  vecHist1D.resize( m_config.inNodeNames.size() );
-  vecHist2D.resize( m_config.inNodeNames.size() );
+  // grab relevant labels
+  const auto& vecStatLabels = CaloStatusMapperDefs::StatLabels();
+  const auto& vecH1DLabels  = CaloStatusMapperDefs::H1DLabels();
+  const auto& vecH2DLabels  = CaloStatusMapperDefs::H2DLabels();
 
-  // loop over nodes
-  for (auto inNodeName : m_config.inNodeNames) {
-    /* TODO fill in */
-  }
+  // loop over input node names
+  m_vecHist1D.resize( m_config.inNodeNames.size() );
+  m_vecHist2D.resize( m_config.inNodeNames.size() );
+  for (size_t iNode = 0; iNode < m_config.inNodeNames.size(); ++iNode) {
+
+    // loop over status labels
+    m_vecHist1D[iNode].resize( vecStatLabels.size() );
+    m_vecHist2D[iNode].resize( vecStatLabels.size() );
+    for (size_t iStatus = 0; iStatus < vecStatLabels.size(); ++iStatus) {
+
+      // make 1d histograms
+      for (const std::string& h1d : vecH1DLabels) {
+
+        // construct name
+        std::string histName = "h" + vecStatLabels[iStatus] + h1d + "_";
+        histName += m_config.inNodeNames[iNode].first;
+
+        // grab binning for histogram
+        const auto& binDef1D = CaloStatusMapperDefs::NumBins()[ m_config.inNodeNames[iNode].second ];
+
+        // create histogram
+        m_vecHist1D[iNode][iStatus].push_back(
+          new TH1D(
+            histName.data(),
+            "",  // TODO add axis labels
+            std::get<0>(binDef1D),
+            std::get<1>(binDef1D),
+            std::get<2>(binDef1D)
+          )
+        );
+
+        // if not null, register histogram with manager
+        if (!m_vecHist1D[iNode][iStatus].back()) {
+          std::cerr << PHWHERE << ": PANIC! Not able to make histogram " << histName << "! Aborting!" << std::endl;
+          assert(m_vecHist1D[iNode][iStatus].back());
+        } else {
+          m_manager -> registerHisto( m_vecHist1D[iNode][iStatus].back() );
+        }
+      }  // end 1d histogram loop
+
+      // make 2d histograms
+      for (const std::string& h2d : vecH2DLabels) {
+
+        /* TODO fill in */
+        std::cout << "TEST h2d = " << h2d << std::endl;
+
+      }  // end 2d histogramloop
+    }  // end status loop
+  }  // end node loop
+
+  // register histograms
   return;
 
 }  // end 'InitOutFile()'
