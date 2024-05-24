@@ -73,7 +73,8 @@ void Fun4All_TestCaloStatusMapper(
   // map out status of calo towers
   CaloStatusMapper* mapper = new CaloStatusMapper("CaloStatusMapper");
   mapper -> SetConfig(cfg_mapper);
-  f4a   -> registerSubsystem(mapper);
+  mapper -> Verbosity(verbosity);
+  f4a    -> registerSubsystem(mapper);
 
   // run modules and exit -----------------------------------------------------
 
