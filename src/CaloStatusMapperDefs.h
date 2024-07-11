@@ -45,7 +45,7 @@ namespace CaloStatusMapperDefs {
 
   // enums --------------------------------------------------------------------
 
-  enum Calo {EMC, IHC, OHC, ZDC, SEPD};
+  enum Calo {EMC, IHC, OHC, ZDC, SEPD, NONE};
   enum Stat {Good, Hot, BadTime, BadChi, NotInstr, NoCalib, Unknown};
   enum H1D  {Num, Eta, Phi};
   enum H2D  {EtaVsPhi};
@@ -160,6 +160,12 @@ namespace CaloStatusMapperDefs {
     };
     return phiBins;
   }
+
+
+  // make total number histogram
+  //   - TODO simplify by smushing all these inlined functions into
+  //     one simple function
+  TH1D* MakeNumHistogram(const std::string name, const int type = Calo::
 
 
 
