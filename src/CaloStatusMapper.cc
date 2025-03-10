@@ -23,6 +23,10 @@
 #include <fun4all/Fun4AllReturnCodes.h>
 #include <fun4all/Fun4AllHistoManager.h>
 
+// jet background utilities
+// FIXME remove once MakeQAHistNames is in Jet QA
+#include <jetbackground/BeamBackgroundFilterAndQADefs.h>
+
 // phool libraries
 #include <phool/getClass.h>
 #include <phool/phool.h>
@@ -39,6 +43,10 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+
+// abbreviate namespace for convenience
+// FIXME remove once MakeQAHistNames is in Jet QA
+namespace BeamBackgroundFilter = BBFQD:
 
 
 
@@ -160,10 +168,10 @@ int CaloStatusMapper::process_event(PHCompositeNode* topNode)
        } 
 
        // fill histograms accordingly
-       m_vecHist1D[iNode][status][CaloStatusMapperDefs::H1D::Num]      -> Fill(key);
-       m_vecHist1D[iNode][status][CaloStatusMapperDefs::H1D::Eta]      -> Fill(iEta);
-       m_vecHist1D[iNode][status][CaloStatusMapperDefs::H1D::Phi]      -> Fill(iPhi);
-       m_vecHist2D[iNode][status][CaloStatusMapperDefs::H2D::EtaVsPhi] -> Fill(iPhi, iEta);
+       // TODO UPDATE ACCORDINGLY
+       m_hists -> Fill(iEta);
+       m_hists -> Fill(iPhi);
+       m_hists -> Fill(iEta, iPhi);
 
     }  // end tower loop
   }  // end node loop
@@ -184,7 +192,10 @@ int CaloStatusMapper::End(PHCompositeNode *topNode)
     std::cout << "CaloStatusMapper::End(PHCompositeNode* topNode) This is the End..." << std::endl;
   }
 
-  /* nothing to do */
+  // register hists and exit
+  for (auto& hist : m_hists) {
+    m_manager -> registerHisto(hist.second);
+  }
   return Fun4AllReturnCodes::EVENT_OK;
 
 }  // end 'End(PHCompositeNode*)'
@@ -229,147 +240,65 @@ void CaloStatusMapper::BuildHistograms()
     std::cout << "CaloStatusMapper::BuildHistograms() Creating histograms" << std::endl;
   }
 
-  // make sure module name is lower case
-  std::string smallModuleName = m_moduleName;
-  std::transform(
-    smallModuleName.begin(),
-    smallModuleName.end(),
-    smallModuleName.begin(),
-    ::tolower
-  );
+  // instantiate histogram definitions
+  const CaloStatusMapperDefs::EMCalHistDef emHistDef;
+  const CaloStatusMapperDefs::IHCalHistDef ihHistDef;
+  const CaloStatusMapperDefs::OHCalHistDef ohHistDef;
 
-  // lambda to make histogram names
-  auto makeHistName = [&smallModuleName, this](const std::string& status, const std::string& hist, const std::string& node)
-  {
-    std::string name = "h_";
-    name += smallModuleName;
-    name += "_";
-    name += status;
-    name += hist;
-    name += "_";
-    name += node;
-    if (!m_histTag.empty())
-    {
-      name.append("_" + m_histTag);
-    }
-    return name;
-  };
-
-  // grab relevant labels
-  const auto& vecStatLabels = CaloStatusMapperDefs::StatLabels();
-  const auto& vecH1DLabels  = CaloStatusMapperDefs::H1DLabels();
-  const auto& vecH2DLabels  = CaloStatusMapperDefs::H2DLabels();
+  // grab relevant status labels
+  const auto& mapStatLabels = CaloStatusMapperDefs::StatLabels();
 
   // loop over input node names
-  m_vecHist1D.resize( m_config.inNodeNames.size() );
-  m_vecHist2D.resize( m_config.inNodeNames.size() );
-  for (size_t iNode = 0; iNode < m_config.inNodeNames.size(); ++iNode)
+  for (const auto& nodeName : m_config.inNodeNames)
   {
 
-    // grab node name & type of calo
-    const std::string nodeName = m_config.inNodeNames[iNode].first;
-    const int         caloType = m_config.inNodeNames[iNode].second;
+    // make status hist name
+    const std::string& baseStat = "Status_" + nodeName.first;
+    const std::string& nameStat = BBQFQD::MakeQAHistNames({baseStat}, m_moduleName, m_histTag);
+
+    // create status hist
+    //   - n.b. calo type doesn't matter here
+    m_hists[baseStat] = emHistDef.MakeStatus1D(nameStat);
 
     // loop over status labels
-    m_vecHist1D[iNode].resize( vecStatLabels.size() );
-    m_vecHist2D[iNode].resize( vecStatLabels.size() );
-    for (size_t iStatus = 0; iStatus < vecStatLabels.size(); ++iStatus)
+    for (const auto& statLabel : mapStatLabels)
     {
 
-      // make 1d histograms
-      for (size_t iHist1D = 0; iHist1D < vecH1DLabels.size(); ++iHist1D)
+      // set relevant bin label for status histogram
+      m_hists[baseStat] -> GetXaxis() -> SetBinLabel(statLabel.first + 1, statLabel.second.data());
+
+      // make base eta/phi hist name
+      const std::string perEtaBase = MakeBaseName("NPerEta", statLabel.second, nodeName.first);
+      const std::string perPhiBase = MakeBaseName("NPerPhi", statLabel.second, nodeName.first);
+      const std::string phiEtaBase = MakeBaseName("PhiVsEta", staLabel.second. nodeName.first);
+
+      // make full eta/phi hist name
+      const std::string namePerEta = BBFQD::MakeQAHistNames({perEtaBase}, m_moduleName, m_histTag);
+      const std::string namePerPhi = BBFQD::MakeQAHistNames({perPhiBase}, m_moduleName, m_histTag);
+      const std::string namePhiEta = BBFQD::MakeQAHistNames({phiEtaBase}, m_moduleName, m_histTag);
+
+      // make eta/phi hists
+      switch (nodeName.second)
       {
+        case CaloStatusMapperDefs::Calo::OHC:
+          m_hists[perEtaBase] = ohHistDef.MakeEta1D(namePerEta);
+          m_hists[perPhiBase] = ohHistDef.MakePhi1D(namePerPhi);
+          m_hists[phiEtaBase] = ohHistDef.MakePhiEta2D(namePhiEta);
+          break;
+        case CaloStatusMapperDefs::Calo::IHC:
+          m_hists[perEtaBase] = ihHistDef.MakeEta1D(namePerEta);
+          m_hists[perPhiBase] = ihHistDef.MakePhi1D(namePerPhi);
+          m_hists[phiEtaBase] = ihHistDef.MakePhiEta2D(namePhiEta);
+          break;
+        case CaloStatusMapperDefs::Calo::EMC:
+          [[fallthrough]];
+        default;
+          m_hists[perEtaBase] = emHistDef.MakeEta1D(namePerEta);
+          m_hists[perPhiBase] = emHistDef.MakePhi1D(namePerPhi);
+          m_hists[phiEtaBase] = emHistDef.MakePhiEta2D(namePhiEta);
+          break;
+      }
 
-        // construct name
-        std::string histName = makeHistName(vecStatLabels[iStatus], vecH1DLabels[iHist1D], nodeName);
-
-        // grab binning for histogram
-        CaloStatusMapperDefs::BinDef binDef1D;
-        switch (iHist1D)
-        {
-          case CaloStatusMapperDefs::H1D::Phi:
-            binDef1D = CaloStatusMapperDefs::PhiBins().at(caloType);
-            break;
-          case CaloStatusMapperDefs::H1D::Eta:
-            binDef1D = CaloStatusMapperDefs::EtaBins().at(caloType);
-            break;
-          case CaloStatusMapperDefs::H1D::Num:
-            [[fallthrough]];
-          default:
-            binDef1D = CaloStatusMapperDefs::NumBins().at(caloType);
-            break;
-        }
-
-        // create histogram
-        m_vecHist1D[iNode][iStatus].push_back(
-          new TH1D(
-            histName.data(),
-            "",  // TODO add axis labels
-            std::get<0>(binDef1D),
-            std::get<1>(binDef1D),
-            std::get<2>(binDef1D)
-          )
-        );
-
-        // if not null, register histogram with manager
-        if (!m_vecHist1D[iNode][iStatus].back())
-        {
-          std::cerr << PHWHERE << ": PANIC! Not able to make histogram " << histName
-                    << "! Aborting!"
-                    << std::endl;
-          assert(m_vecHist1D[iNode][iStatus].back());
-        }
-        else
-        {
-          m_manager -> registerHisto( m_vecHist1D[iNode][iStatus].back() );
-        }
-      }  // end 1d histogram loop
-
-      // make 2d histograms
-      for (size_t iHist2D = 0; iHist2D < vecH2DLabels.size(); ++iHist2D)
-      {
-
-        // construct name
-        std::string histName = makeHistName(vecStatLabels[iStatus], vecH2DLabels[iHist2D], nodeName);
-
-        // grab binning for histogram
-        CaloStatusMapperDefs::BinDef xBinDefs2D;
-        CaloStatusMapperDefs::BinDef yBinDefs2D;
-        switch (iHist2D)
-        {
-          case CaloStatusMapperDefs::H2D::EtaVsPhi:
-            [[fallthrough]];
-          default:
-            xBinDefs2D = CaloStatusMapperDefs::PhiBins().at(caloType);
-            yBinDefs2D = CaloStatusMapperDefs::EtaBins().at(caloType);
-            break;
-        }
-
-        // create histogram
-        m_vecHist2D[iNode][iStatus].push_back(
-          new TH2D(
-            histName.data(),
-            "",  // TODO add axis labels
-            std::get<0>(xBinDefs2D),
-            std::get<1>(xBinDefs2D),
-            std::get<2>(xBinDefs2D),
-            std::get<0>(yBinDefs2D),
-            std::get<1>(yBinDefs2D),
-            std::get<2>(yBinDefs2D)
-          )
-        );
-
-        // if not null, register histogram with manager
-        if (!m_vecHist2D[iNode][iStatus].back())
-        {
-          std::cerr << PHWHERE << ": PANIC! Not able to make histogram " << histName << "! Aborting!" << std::endl;
-          assert(m_vecHist2D[iNode][iStatus].back());
-        }
-        else
-        {
-          m_manager -> registerHisto( m_vecHist2D[iNode][iStatus].back() );
-        }
-      }  // end 2d histogram loop
     }  // end status loop
   }  // end node loop
   return;
@@ -408,5 +337,21 @@ void CaloStatusMapper::GrabNodes(PHCompositeNode* topNode)
   return;
 
 }  // end 'GrabNodes(PHCompositeNode*)'
+
+
+
+// ----------------------------------------------------------------------------
+//! Make base histogram name
+// ----------------------------------------------------------------------------
+std::string CaloStatusMapper::MakeBaseName(const std::string& base, const std::string& stat, const std::string& node)
+{
+
+  if (m_config.debug && (Verbosity() > 2))
+  {
+    std::cout << "CaloStatusMapper::MakeBaseName(std::string& x 3) Making base histogram name" << std::endl;
+  }
+  return stat + "_" + base + "_" + node;
+
+}  // end 'MakeBaseName(std::string& x 3)'
 
 // end ========================================================================

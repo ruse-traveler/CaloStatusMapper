@@ -25,12 +25,14 @@
 #include <fun4all/SubsysReco.h>
 
 // c++ utilities
+#include <map>
 #include <string>
 #include <vector>
 
 // forward declarations
 class PHCompositeNode;
 class Fun4AllHistoManager;
+class TH1;
 class TriggerAnalyzer;
 
 
@@ -93,23 +95,27 @@ class CaloStatusMapper : public SubsysReco
     void InitHistManager();
     void BuildHistograms();
     void GrabNodes(PHCompositeNode* topNode);
+    std::string MakeBaseName(const std::string& base, const std::string& stat, const std::string& node);
 
-    // output histograms
-    CaloStatusMapperDefs::H1DVec m_vecHist1D;
-    CaloStatusMapperDefs::H2DVec m_vecHist2D;
-
-    // f4a members
+    ///! histogram manager
     Fun4AllHistoManager* m_manager {nullptr};
+
+    ///! for checking which trigger fired
     TriggerAnalyzer* m_analyzer {nullptr};
 
-    // module name and hist tag
-    std::string m_moduleName;
-    std::string m_histTag {"AllTrig"};
-
-    // input nodes
+    ///! input nodes
     std::vector<TowerInfoContainer*> m_inNodes;
 
-    // module configuration
+    ///! output histograms
+    std::map<std::String, TH1*> m_hists;
+
+    ///! module name
+    std::string m_moduleName;
+
+    ///! histogram tag
+    std::string m_histTag {""};
+
+    ///! module configuration
     Config m_config;
 
 };  // end CaloStatusMapper

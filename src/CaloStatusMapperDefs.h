@@ -14,15 +14,15 @@
 // calobase libraries
 #include <calobase/TowerInfov2.h>
 
+// root libraries
+#include <TH1.h>
+#include <TH2.h>
+
 // c++ utilities
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
-
-// forward declarations
-class TH1D;
-class TH2D;
 
 
 
@@ -36,143 +36,143 @@ class TH2D;
 namespace CaloStatusMapperDefs
 {
 
-  // convenience types ========================================================
-
+  // convenience types
   typedef std::pair<std::string, int> NodeDef;
-  typedef std::tuple<uint32_t, float, float> BinDef;
-  typedef std::vector<std::vector<std::vector<TH1D*>>> H1DVec;
-  typedef std::vector<std::vector<std::vector<TH2D*>>> H2DVec;
 
 
 
-  // enums ====================================================================
-
-  enum Calo {EMC, IHC, OHC, NONE};
-  enum Stat {Good, Hot, BadTime, BadChi, NotInstr, NoCalib, Unknown};
-  enum H1D  {Num, Eta, Phi};
-  enum H2D  {EtaVsPhi};
-
-
-
-  // constants ================================================================
-
-  //! total no. of towers
-  inline std::vector<uint32_t> const& NTowers()
+  // ==========================================================================
+  //! Enumeration of calorimeters
+  // ==========================================================================
+  /*! This enumerates the different calorimeters one can
+   *  map in the module.
+   */
+  enum Calo
   {
-    static std::vector<uint32_t> nTowers = {
-      24576,
-      1536,
-      1536
-    };
-    return nTowers;
-  }
+    EMC,
+    IHC,
+    OHC,
+    NONE
+  };
 
-  //! total no. of towers along eta
-  inline std::vector<uint32_t> const& NEta()
+
+
+  // ==========================================================================
+  //! Possible status codes
+  // ==========================================================================
+  /*! This enumerates possible status codes of towers.
+   */
+  enum Stat
   {
-    static std::vector<uint32_t> nEta = {
-      96,
-      24,
-      24
-    };
-    return nEta;
-  }
+    Good,
+    Hot,
+    BadTime,
+    BadChi,
+    NotInstr,
+    NoCalib,
+    Unknown
+  };
 
-  //! total no. of towers along phi
-  inline std::vector<uint32_t> const& NPhi()
+
+
+  // ==========================================================================
+  //! Maps status codes onto labels
+  // ==========================================================================
+  inline std::map<Stat, std::string> const& StatLabels()
   {
-    static std::vector<uint32_t> nPhi = {
-      256,
-      64,
-      64
-    };
-    return nPhi;
-  }
-
-
-
-  // histogram definitions ====================================================
-  /* TODO most of this should probably go in the class itself */
-
-  //! status labels
-  inline std::vector<std::string> const& StatLabels()
-  {
-    static std::vector<std::string> statLabels = {
-      "Good",
-      "Bad",
-      "Hot",
-      "BadTime",
-      "NotIntsr",
-      "NoCalib"
+    static std::map<Stat, std::string> mapStatLabels = {
+      {Stat::Good,     "Good"},
+      {Stat::Hot,      "Hot"},
+      {Stat::BadTime,  "BadTime"},
+      {Stat::BadChi,   "BadChi"},
+      {Stat::NotInstr, "NotInstr"},
+      {Stat::NoCalib,  "NoCalib"},
+      {Stat::Unknown,  "Unknown"}
     };
     return statLabels;
   }
 
-  //! 1D histogram labels
-  inline std::vector<std::string> const& H1DLabels()
-  {
-    static std::vector<std::string> labelsH1D = {
-      "NumberPerEvt",
-      "NumberPerEta",
-      "NumberPerPhi"
-    };
-    return labelsH1D;
-  }
 
-  //! 2D histogram labels
-  inline std::vector<std::string> const& H2DLabels()
-  {
-    static std::vector<std::string> labelsH2D = {
-      "EtaVsPhi"
-    };
-    return labelsH2D;
-  }
 
-  //! total number axis definitions
-  inline std::vector<BinDef> const& NumBins()
-  {
-    static std::vector<BinDef> numBins = {
-      std::make_tuple(NTowers()[Calo::EMC], -0.5, NTowers()[Calo::EMC] - 0.5),
-      std::make_tuple(NTowers()[Calo::IHC], -0.5, NTowers()[Calo::IHC] - 0.5),
-      std::make_tuple(NTowers()[Calo::OHC], -0.5, NTowers()[Calo::OHC] - 0.5)
-    };
-    return numBins;
-  }
-
-  //! number per eta axis definitions
-  inline std::vector<BinDef> const& EtaBins()
-  {
-    static std::vector<BinDef> etaBins = {
-      std::make_tuple(NEta()[Calo::EMC], -0.5, NEta()[Calo::EMC] - 0.5),
-      std::make_tuple(NEta()[Calo::IHC], -0.5, NEta()[Calo::IHC] - 0.5),
-      std::make_tuple(NEta()[Calo::OHC], -0.5, NEta()[Calo::OHC] - 0.5)
-    };
-    return etaBins;
-  }
-
-  //! number per eta axis definitions
-  inline std::vector<BinDef> const& PhiBins()
-  {
-    static std::vector<BinDef> phiBins = {
-      std::make_tuple(NPhi()[Calo::EMC], -0.5, NPhi()[Calo::EMC] - 0.5),
-      std::make_tuple(NPhi()[Calo::IHC], -0.5, NPhi()[Calo::IHC] - 0.5),
-      std::make_tuple(NPhi()[Calo::OHC], -0.5, NPhi()[Calo::OHC] - 0.5)
-    };
-    return phiBins;
-  }
-
-  //! make total number histogram
-  /*!  - TODO simplify by smushing all these inlined functions into
-   *     one simple function
-   *  TH1D* MakeNumHistogram(const std::string name, const int type = Calo::NONE)
+  // ==========================================================================
+  //! Helper struct to define an axis of a histogram
+  // ==========================================================================
+  /*! This is a lightweight struct to consolidate information
+   *  necessary to define a histogram axis.
    */
+  struct AxisDef
+  {
+
+    // members
+    std::string label {""};  ///! axis label
+    std::size_t nBins {10};  ///! no. of bins in an axis
+    float       start {0.};  ///! low edge of 1st bin
+    float       stop  {1.};  ///! high edge of last bin
+
+  };  // end AxisDef
 
 
-  // helper methods ===========================================================
 
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  //! Helper struct to define histograms
+  // ==========================================================================
+  /*! This is a lightweight struct to organize the axis definitions
+   *  for status, eta, phi axes and make histograms using them.
+   */ 
+  template <std::size_t H, std::size_t F, std::size_t S>
+  struct HistDef
+  {
+
+    // axis definitions
+    AxisDef stat {"Status", S, -0.5, S - 0.5};
+    AxisDef eta  {"i_{#eta}", H, -0.5, H - 0.5};
+    AxisDef phi  {"i_{#phi}", F, -0.5, F - 0.5};
+
+    //! make 1 1d status plot
+    TH1D* MakeStatus1D(const std::string& name)
+    {
+      const std::string title = ";" + status.label;
+      return new TH1D(name.data(), title.data(), stat.nBins, stat.start, stat.stop);
+    }
+
+    //! make a 1d eta plot
+    TH1D* MakeEta1D(const std::string& name)
+    {
+      const std::string title = ";" + eta.label;
+      return new TH1D(name.data(), title.data(), eta.nBins, eta.start, eta.stop);
+    }
+
+    //! make a 1d phi plot
+    TH1D* MakePhi1D(const std::string& name)
+    {
+      const std::string title = ";" + phi.label;
+      return new TH1D(name.data(), title.data(), phi.nBins, phi.start, phi.stop);
+    }
+
+    //! make a 2d eta-phi plot
+    TH1D* MakePhiEta2D(const std::string& name)
+    {
+      const std::string title = ";" + eta.label + ";" + phi.label;
+      return new TH2D(name.data(), title.data(), eta.nBins, eta.start, eta.stop, phi.nBins, phi.start, phi.stop);
+    }
+
+  };  // end HistDef
+
+  // -------------------------------------------------------------------------
+  //! Maps for specific calorimeters
+  // -------------------------------------------------------------------------
+  typedef HistDef<96, 256, 7> EMCalHistDef;
+  typedef HistDef<24, 64, 7> IHCalHistDef;
+  typedef HistDef<24, 64, 7> OHCalHistDef;
+
+
+
+  // ==========================================================================
   //! Returns enum corresponding to given tower status
-  // --------------------------------------------------------------------------
+  // ==========================================================================
+  /*! This helper methods returns the associated code of
+   *  the provided tower.
+   */ 
   int GetTowerStatus(TowerInfo* tower)
   {
 
@@ -203,7 +203,7 @@ namespace CaloStatusMapperDefs
     }
     return status;
 
-  }  // end 'GetTowerStatus(TowerInfov2*)'
+  }  // end 'GetTowerStatus(TowerInfo*)'
 
 }  // end CaloStatusMapperDefs namespace
 
