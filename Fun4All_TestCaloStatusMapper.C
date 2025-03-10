@@ -11,6 +11,7 @@
 
 // c++ utilities
 #include <string>
+#include <utility>
 // ffa modules
 #include <ffamodules/CDBInterface.h>
 #include <ffamodules/FlagHandler.h>
@@ -18,6 +19,7 @@
 #include <fun4all/Fun4AllDstInputManager.h>
 #include <fun4all/Fun4AllInputManager.h>
 #include <fun4all/Fun4AllServer.h>
+#include <fun4all/Fun4AllUtils.h>
 #include <fun4all/SubsysReco.h>
 // phool utilities
 #include <phool/recoConsts.h>
@@ -36,11 +38,12 @@ R__LOAD_LIBRARY(libcalostatusmapper.so)
 // macro body =================================================================
 
 void Fun4All_TestCaloStatusMapper(
-  const int runnumber = 43273,
-  const int nEvents = 10,
-  const int verbosity = 5,
-  const std::string inFile = "/sphenix/lustre01/sphnxpro/commissioning/slurp/caloy2test/run_00042000_00042100/DST_CALO_run2pp_new_2024p001-00042072-0121.root",
-  const std::string outFile = "test_qa.root"
+  const int nEvents = 100,
+  const std::string& inlist = "lists/events/dst_calo_run2pp-00047289.list",
+  const std::string& outfile = "test.root",
+  const std::string& outfile_hist = "prepForMerge_initialTestRun.run2pp_00047289_nEvt100.d10m3y2025.root",
+  const std::string& dbtag = "ProdA_2024",
+  const int verbosity = 1
 ) {
 
   // options ------------------------------------------------------------------
@@ -52,6 +55,19 @@ void Fun4All_TestCaloStatusMapper(
 
   // initialize f4a -----------------------------------------------------------
 
+  // initialize F4A server
+  Fun4AllServer* se = Fun4AllServer::instance();
+  se -> Verbosity(verbosity);
+
+  // grab 1st file from input list
+  ifstream    files(inlist);
+  std::string first("");
+  std::getline(files, first);
+
+  // grab run and segment no.s
+  std::pair<int, int> runseg = Fun4AllUtils::GetRunSegment(first);
+  int runnumber = runseg.first;
+
   Fun4AllServer* f4a = Fun4AllServer::instance();
   CDBInterface*  cdb = CDBInterface::instance();
   recoConsts*    rc  = recoConsts::instance();
@@ -59,13 +75,20 @@ void Fun4All_TestCaloStatusMapper(
   cdb -> Verbosity(verbosity);
 
   // grab lookup tables
-  rc -> set_StringFlag("CDB_GLOBALTAG", "ProdA_2024");
+  rc -> set_StringFlag("CDB_GLOBALTAG", dbtag);
   rc -> set_uint64Flag("TIMESTAMP", runnumber);
+
+  // connect to conditions database
+  CDBInterface::instance()->Verbosity(verbosity);
+
+  // set up flag handler
+  FlagHandler* flag = new FlagHandler();
+  se -> registerSubsystem(flag);
 
   // register inputs/outputs --------------------------------------------------
 
   Fun4AllDstInputManager* input = new Fun4AllDstInputManager("InputDstManager");
-  input -> fileopen(inFile);
+  input -> AddListFile(inlist);
   f4a   -> registerInputManager(input);
 
   // register subsystem reco modules ------------------------------------------
@@ -83,7 +106,7 @@ void Fun4All_TestCaloStatusMapper(
   f4a -> End();
 
   // save qa output and exit
-  QAHistManagerDef::saveQARootFile(outFile);  // TODO uncomment when ready
+  QAHistManagerDef::saveQARootFile(outfile_hist);
   delete f4a;
 
   // close and  exit
