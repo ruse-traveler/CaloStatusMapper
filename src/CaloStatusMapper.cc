@@ -16,6 +16,9 @@
 // calo base
 #include <calobase/TowerInfov2.h>
 
+// calo trigger
+#include <calotrigger/TriggerAnalyzer.h>
+
 // f4a libraries
 #include <fun4all/Fun4AllReturnCodes.h>
 #include <fun4all/Fun4AllHistoManager.h>
@@ -44,13 +47,15 @@
 // ----------------------------------------------------------------------------
 //! Module constructor
 // ----------------------------------------------------------------------------
-CaloStatusMapper::CaloStatusMapper(const std::string &name) : SubsysReco(name)
+CaloStatusMapper::CaloStatusMapper(const std::string& modulename)
+  : SubsysReco(modulename)
+  , m_moduleName(modulename)
 {
 
   // print debug message
-  if (m_config.debug && (Verbosity() > 0))
+  if (m_config.debug && (Verbosity() > 1))
   {
-    std::cout << "CaloStatusMapper::CaloStatusMapper(const std::string &name) Calling ctor" << std::endl;
+    std::cout << "CaloStatusMapper::CaloStatusMapper(const std::string&) Calling ctor" << std::endl;
   }
 
   // make sure node vector is empty
@@ -67,12 +72,11 @@ CaloStatusMapper::~CaloStatusMapper()
 {
 
   // print debug message
-  if (m_config.debug && (Verbosity() > 0))
+  if (m_config.debug && (Verbosity() > 1))
   {
     std::cout << "CaloStatusMapper::~CaloStatusMapper() Calling dtor" << std::endl;
   }
-
-  /* nothing to do */
+  delete m_analyzer;
 
 }  // end dtor
 
@@ -88,29 +92,16 @@ int CaloStatusMapper::Init(PHCompositeNode* topNode)
 
   if (m_config.debug)
   {
-    std::cout << "CaloStatusMapper::Init(PHCompositeNode *topNode) Initializing" << std::endl;
+    std::cout << "CaloStatusMapper::Init(PHCompositeNode*) Initializing" << std::endl;
   }
 
+  // initialize trigger analyzer
+  delete m_analyzer;
+  m_analyzer = new TriggerAnalyzer();
+
+  // initialize manager/histograms
   InitHistManager();
   BuildHistograms();
-  return Fun4AllReturnCodes::EVENT_OK;
-
-}  // end 'Init(PHCompositeNode*)'
-
-
-
-// ----------------------------------------------------------------------------
-//! Get ready for a new run
-// ----------------------------------------------------------------------------
-int CaloStatusMapper::InitRun(PHCompositeNode* topNode)
-{
-
-  if (m_config.debug)
-  {
-    std::cout << "CaloStatusMapper::InitRun(PHCompositeNode *topNode) Preparing for new run" << std::endl;
-  }
-
-  /* TODO fill in */
   return Fun4AllReturnCodes::EVENT_OK;
 
 }  // end 'Init(PHCompositeNode*)'
@@ -125,7 +116,18 @@ int CaloStatusMapper::process_event(PHCompositeNode* topNode)
 
   if (m_config.debug)
   {
-    std::cout << "CaloStatusMapper::process_event(PHCompositeNode *topNode) Processing Event" << std::endl;
+    std::cout << "CaloStatusMapper::process_event(PHCompositeNode* topNode) Processing Event" << std::endl;
+  }
+
+  // if needed, check if selected trigger fired
+  if (m_config.doTrgSelect)
+  {
+    m_analyzer -> decodeTriggers(topNode);
+    bool hasTrigger = JetQADefs::DidTriggerFire(m_config.trgToSelect, m_analyzer);
+    if (!hasTrigger)
+    {
+      return Fun4AllReturnCodes::EVENT_OK;
+    }
   }
 
   // grab input nodes
@@ -179,7 +181,7 @@ int CaloStatusMapper::End(PHCompositeNode *topNode)
 
   if (m_config.debug)
   {
-    std::cout << "CaloStatusMapper::End(PHCompositeNode *topNode) This is the End..." << std::endl;
+    std::cout << "CaloStatusMapper::End(PHCompositeNode* topNode) This is the End..." << std::endl;
   }
 
   /* nothing to do */
@@ -227,6 +229,32 @@ void CaloStatusMapper::BuildHistograms()
     std::cout << "CaloStatusMapper::BuildHistograms() Creating histograms" << std::endl;
   }
 
+  // make sure module name is lower case
+  std::string smallModuleName = m_moduleName;
+  std::transform(
+    smallModuleName.begin(),
+    smallModuleName.end(),
+    smallModuleName.begin(),
+    ::tolower
+  );
+
+  // lambda to make histogram names
+  auto makeHistName = [&smallModuleName, this](const std::string& status, const std::string& hist, const std::string& node)
+  {
+    std::string name = "h_";
+    name += smallModuleName;
+    name += "_";
+    name += status;
+    name += hist;
+    name += "_";
+    name += node;
+    if (!m_histTag.empty())
+    {
+      name.append("_" + m_histTag);
+    }
+    return name;
+  };
+
   // grab relevant labels
   const auto& vecStatLabels = CaloStatusMapperDefs::StatLabels();
   const auto& vecH1DLabels  = CaloStatusMapperDefs::H1DLabels();
@@ -253,7 +281,7 @@ void CaloStatusMapper::BuildHistograms()
       {
 
         // construct name
-        std::string histName = "h" + vecStatLabels[iStatus] + vecH1DLabels[iHist1D] + "_" + nodeName;
+        std::string histName = makeHistName(vecStatLabels[iStatus], vecH1DLabels[iHist1D], nodeName);
 
         // grab binning for histogram
         CaloStatusMapperDefs::BinDef binDef1D;
@@ -302,7 +330,7 @@ void CaloStatusMapper::BuildHistograms()
       {
 
         // construct name
-        std::string histName = "h" + vecStatLabels[iStatus] + vecH2DLabels[iHist2D] + "_" + nodeName;
+        std::string histName = makeHistName(vecStatLabels[iStatus], vecH2DLabels[iHist2D], nodeName);
 
         // grab binning for histogram
         CaloStatusMapperDefs::BinDef xBinDefs2D;

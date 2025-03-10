@@ -21,17 +21,21 @@
 #include <fun4all/Fun4AllServer.h>
 #include <fun4all/Fun4AllUtils.h>
 #include <fun4all/SubsysReco.h>
+// jet qa utilities
+#include <jetqa/JetQADefs.h>
 // phool utilities
 #include <phool/recoConsts.h>
 // qa utils
 #include <qautils/QAHistManagerDef.h>
 // module definitions
 #include <calostatusmapper/CaloStatusMapper.h>
+#include <calostatusmapper/CaloStatusMapperDefs.h>
 
 R__LOAD_LIBRARY(libcalo_io.so)
+R__LOAD_LIBRARY(libcalostatusmapper.so)
 R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY(libfun4allraw.so)
-R__LOAD_LIBRARY(libcalostatusmapper.so)
+R__LOAD_LIBRARY(libjetqa.so)
 
 
 
@@ -41,7 +45,7 @@ void Fun4All_TestCaloStatusMapper(
   const int nEvents = 100,
   const std::string& inlist = "lists/events/dst_calo_run2pp-00047289.list",
   const std::string& outfile = "test.root",
-  const std::string& outfile_hist = "prepForMerge_initialTestRun.run2pp_00047289_nEvt100.d10m3y2025.root",
+  const std::string& outfile_hist = "prepForMerge_addJetQAHooks.run2pp_00047289_nEvt100.d10m3y2025.root",
   const std::string& dbtag = "ProdA_2024",
   const int verbosity = 1
 ) {
@@ -50,7 +54,15 @@ void Fun4All_TestCaloStatusMapper(
 
   // trigger cluster maker options
   CaloStatusMapper::Config cfg_mapper {
-    .debug = true
+    .debug       = true,
+    .doTrgSelect = false,
+    .trgToSelect = JetQADefs::GL1::MBDNSJet1
+  };
+
+  // for example, we'll only look at the EMCal and OHCal
+  cfg_mapper.inNodeNames = {
+    {"TOWERINFO_CALIB_CEMC",    CaloStatusMapperDefs::Calo::EMC},
+    {"TOWERINFO_CALIB_HCALOUT", CaloStatusMapperDefs::Calo::OHC}
   };
 
   // initialize f4a -----------------------------------------------------------
@@ -96,6 +108,7 @@ void Fun4All_TestCaloStatusMapper(
   // map out status of calo towers
   CaloStatusMapper* mapper = new CaloStatusMapper("CaloStatusMapper");
   mapper -> SetConfig(cfg_mapper);
+  mapper -> SetHistTag("Test");
   mapper -> Verbosity(verbosity);
   f4a    -> registerSubsystem(mapper);
 

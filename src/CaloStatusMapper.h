@@ -11,6 +11,10 @@
 #ifndef CLUSTERSTATUSMAPPER_H
 #define CLUSTERSTATUSMAPPER_H
 
+// jet qa
+// FIXME change to local include when ready to merge
+#include <jetqa/JetQADefs.h>
+
 // module definitions
 #include "CaloStatusMapperDefs.h"
 
@@ -27,6 +31,7 @@
 // forward declarations
 class PHCompositeNode;
 class Fun4AllHistoManager;
+class TriggerAnalyzer;
 
 
 
@@ -48,7 +53,7 @@ class CaloStatusMapper : public SubsysReco
     {
 
       ///! turn debug messages on/off
-      bool debug = true;
+      bool debug {true};
 
       ///! input nodes and what type of calo they are
       std::vector<CaloStatusMapperDefs::NodeDef> inNodeNames
@@ -58,23 +63,29 @@ class CaloStatusMapper : public SubsysReco
         {"TOWERINFO_CALIB_HCALOUT", CaloStatusMapperDefs::Calo::OHC}
       };
 
+     ///! turn trigger selection on/off
+     bool doTrgSelect {false};
+
+     ///! trigger to select
+     uint32_t trgToSelect {JetQADefs::GL1::MBDNSJet1};
+
     };  // end Config
 
     // ctor/dtor
-    CaloStatusMapper(const std::string& name = "CaloStatusMapper");
+    CaloStatusMapper(const std::string& modulename = "CaloStatusMapper");
     ~CaloStatusMapper() override;
 
     // setters
     void SetConfig(const Config& config) {m_config = config;}
+    void SetHistTag(const std::string& tag) {m_histTag = tag;}
 
     // getters
     Config GetConfig() {return m_config;}
 
     // f4a methods
-    int Init(PHCompositeNode* topNode)          override;
-    int InitRun(PHCompositeNode* topNode)       override;  // FIXME might not need...
+    int Init(PHCompositeNode* topNode) override;
     int process_event(PHCompositeNode* topNode) override;
-    int End(PHCompositeNode* topNode)           override;
+    int End(PHCompositeNode* topNode) override;
 
   private:
 
@@ -88,7 +99,12 @@ class CaloStatusMapper : public SubsysReco
     CaloStatusMapperDefs::H2DVec m_vecHist2D;
 
     // f4a members
-    Fun4AllHistoManager* m_manager {NULL};
+    Fun4AllHistoManager* m_manager {nullptr};
+    TriggerAnalyzer* m_analyzer {nullptr};
+
+    // module name and hist tag
+    std::string m_moduleName;
+    std::string m_histTag {"AllTrig"};
 
     // input nodes
     std::vector<TowerInfoContainer*> m_inNodes;
