@@ -1,24 +1,24 @@
-/// ---------------------------------------------------------------------------
+/// ===========================================================================
 /*! \file Fun4All_TestCaloStatusMapper.C
  *  Derek Anderson
  *  05.16.2024
  *
  *  A small Fun4All macro to test the 'CaloStatusMapper' module.
  */
-// ----------------------------------------------------------------------------
+/// ===========================================================================
 
 #define FUN4ALL_TESTCALOSTATUSMAPPER_C
 
 // c++ utilities
 #include <string>
 // ffa modules
-#include <ffamodules/FlagHandler.h>
 #include <ffamodules/CDBInterface.h>
+#include <ffamodules/FlagHandler.h>
 // fun4all libraries
-#include <fun4all/SubsysReco.h>
-#include <fun4all/Fun4AllServer.h>
-#include <fun4all/Fun4AllInputManager.h>
 #include <fun4all/Fun4AllDstInputManager.h>
+#include <fun4all/Fun4AllInputManager.h>
+#include <fun4all/Fun4AllServer.h>
+#include <fun4all/SubsysReco.h>
 // phool utilities
 #include <phool/recoConsts.h>
 // qa utils
@@ -33,7 +33,7 @@ R__LOAD_LIBRARY(libcalostatusmapper.so)
 
 
 
-// macro body -----------------------------------------------------------------
+// macro body =================================================================
 
 void Fun4All_TestCaloStatusMapper(
   const int runnumber = 43273,
@@ -46,7 +46,7 @@ void Fun4All_TestCaloStatusMapper(
   // options ------------------------------------------------------------------
 
   // trigger cluster maker options
-  CaloStatusMapperConfig cfg_mapper {
+  CaloStatusMapper::Config cfg_mapper {
     .debug = true
   };
 
@@ -92,4 +92,4 @@ void Fun4All_TestCaloStatusMapper(
 
 }
 
-// end ------------------------------------------------------------------------
+// end ========================================================================
