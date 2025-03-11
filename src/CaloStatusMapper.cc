@@ -48,23 +48,40 @@ namespace CSMD = CaloStatusMapperDefs;
 // ctor/dtor ==================================================================
 
 // ----------------------------------------------------------------------------
-//! Module constructor
+//! Default module constructor
 // ----------------------------------------------------------------------------
-CaloStatusMapper::CaloStatusMapper(const std::string& modulename)
+CaloStatusMapper::CaloStatusMapper(const std::string& modulename, const bool debug)
   : SubsysReco(modulename)
-  , m_moduleName(modulename)
 {
 
   // print debug message
-  if (m_config.debug && (Verbosity() > 1))
+  if (debug && (Verbosity() > 1))
   {
-    std::cout << "CaloStatusMapper::CaloStatusMapper(const std::string&) Calling ctor" << std::endl;
+    std::cout << "CaloStatusMapper::CaloStatusMapper(std::string&, bool) Calling ctor" << std::endl;
   }
 
   // make sure node vector is empty
   m_inNodes.clear();
 
-}  // end ctor
+}  // end ctor(std::string&, bool)
+
+
+
+// ----------------------------------------------------------------------------
+//! Module constructor accepting a configuration
+// ----------------------------------------------------------------------------
+CaloStatusMapper::CaloStatusMapper(const Config& config)
+  : SubsysReco(config.moduleName)
+  , m_config(config)
+{
+
+  // print debug message
+  if (m_config.debug && (Verbosity() > 1))
+  {
+    std::cout << "CaloStatusMapper::CaloStatusMapper(Config&) Calling ctor" << std::endl;
+  }
+
+}  // end ctor(Config&)
 
 
 
@@ -145,7 +162,7 @@ int CaloStatusMapper::process_event(PHCompositeNode* topNode)
 
     // grab node name & make status base
     const std::string nodeName = m_config.inNodeNames[iNode].first;
-    const std::string statBase = "Status_" + nodeName;
+    const std::string statBase = MakeBaseName("Status", nodeName);
 
     // loop over towers
     TowerInfoContainer* towers = m_inNodes[iNode];
@@ -171,9 +188,9 @@ int CaloStatusMapper::process_event(PHCompositeNode* topNode)
 
       // make base eta/phi hist name
       const std::string statLabel  = m_mapStatLabels[status];
-      const std::string perEtaBase = MakeBaseName("NPerEta", statLabel, nodeName);
-      const std::string perPhiBase = MakeBaseName("NPerPhi", statLabel, nodeName);
-      const std::string phiEtaBase = MakeBaseName("PhiVsEta", statLabel, nodeName);
+      const std::string perEtaBase = MakeBaseName("NPerEta", nodeName, statLabel);
+      const std::string perPhiBase = MakeBaseName("NPerPhi", nodeName, statLabel);
+      const std::string phiEtaBase = MakeBaseName("PhiVsEta", nodeName, statLabel);
 
       // fill histograms accordingly
       m_hists[statBase]   -> Fill(status);
@@ -206,7 +223,7 @@ int CaloStatusMapper::End(PHCompositeNode *topNode)
   // normalize avg. status no.s
   for (const auto& nodeName : m_config.inNodeNames)
   {
-    const std::string statBase = "Status_" + nodeName.first;
+    const std::string statBase = MakeBaseName("Status", nodeName.first);
     m_hists[statBase] -> Scale(1. / (double) m_nEvent);
   }
 
@@ -268,8 +285,8 @@ void CaloStatusMapper::BuildHistograms()
   {
 
     // make status hist name
-    const std::string statBase = "Status_" + nodeName.first;
-    const std::string statName = CSMD::MakeQAHistName(statBase, m_moduleName, m_histTag);
+    const std::string statBase = MakeBaseName("Status", nodeName.first);
+    const std::string statName = CSMD::MakeQAHistName(statBase, m_config.moduleName, m_config.histTag);
 
     // create status hist
     //   - n.b. calo type doesn't matter here
@@ -283,14 +300,14 @@ void CaloStatusMapper::BuildHistograms()
       m_hists[statBase] -> GetXaxis() -> SetBinLabel(statLabel.first + 1, statLabel.second.data());
 
       // make base eta/phi hist name
-      const std::string perEtaBase = MakeBaseName("NPerEta", statLabel.second, nodeName.first);
-      const std::string perPhiBase = MakeBaseName("NPerPhi", statLabel.second, nodeName.first);
-      const std::string phiEtaBase = MakeBaseName("PhiVsEta", statLabel.second, nodeName.first);
+      const std::string perEtaBase = MakeBaseName("NPerEta", nodeName.first, statLabel.second);
+      const std::string perPhiBase = MakeBaseName("NPerPhi", nodeName.first, statLabel.second);
+      const std::string phiEtaBase = MakeBaseName("PhiVsEta", nodeName.first, statLabel.second);
 
       // make full eta/phi hist name
-      const std::string namePerEta = CSMD::MakeQAHistName(perEtaBase, m_moduleName, m_histTag);
-      const std::string namePerPhi = CSMD::MakeQAHistName(perPhiBase, m_moduleName, m_histTag);
-      const std::string namePhiEta = CSMD::MakeQAHistName(phiEtaBase, m_moduleName, m_histTag);
+      const std::string namePerEta = CSMD::MakeQAHistName(perEtaBase, m_config.moduleName, m_config.histTag);
+      const std::string namePerPhi = CSMD::MakeQAHistName(perPhiBase, m_config.moduleName, m_config.histTag);
+      const std::string namePhiEta = CSMD::MakeQAHistName(phiEtaBase, m_config.moduleName, m_config.histTag);
 
       // make eta/phi hists
       switch (nodeName.second)
@@ -358,14 +375,23 @@ void CaloStatusMapper::GrabNodes(PHCompositeNode* topNode)
 // ----------------------------------------------------------------------------
 //! Make base histogram name
 // ----------------------------------------------------------------------------
-std::string CaloStatusMapper::MakeBaseName(const std::string& base, const std::string& stat, const std::string& node)
+std::string CaloStatusMapper::MakeBaseName(
+  const std::string& base,
+  const std::string& node,
+  const std::string& stat) const
 {
 
   if (m_config.debug && (Verbosity() > 2))
   {
     std::cout << "CaloStatusMapper::MakeBaseName(std::string& x 3) Making base histogram name" << std::endl;
   }
-  return stat + "_" + base + "_" + node;
+
+  std::string name = base + "_" + node;
+  if (!stat.empty())
+  {
+    name.insert(0, stat + "_");
+  }
+  return name;
 
 }  // end 'MakeBaseName(std::string& x 3)'
 

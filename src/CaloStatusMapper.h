@@ -57,6 +57,12 @@ class CaloStatusMapper : public SubsysReco
       ///! turn debug messages on/off
       bool debug {true};
 
+      ///! module name
+      std::string moduleName {"CaloStatusMapper"};
+
+      ///! histogram tag
+      std::string histTag {""};
+
       ///! input nodes and what type of calo they are
       std::vector<CaloStatusMapperDefs::NodeDef> inNodeNames
       {
@@ -74,12 +80,12 @@ class CaloStatusMapper : public SubsysReco
     };  // end Config
 
     // ctor/dtor
-    CaloStatusMapper(const std::string& modulename = "CaloStatusMapper");
+    CaloStatusMapper(const std::string& modulename = "CaloStatusMapper", const bool debug = false);
+    CaloStatusMapper(const Config& config);
     ~CaloStatusMapper() override;
 
     // setters
     void SetConfig(const Config& config) {m_config = config;}
-    void SetHistTag(const std::string& tag) {m_histTag = tag;}
 
     // getters
     Config GetConfig() {return m_config;}
@@ -95,7 +101,7 @@ class CaloStatusMapper : public SubsysReco
     void InitHistManager();
     void BuildHistograms();
     void GrabNodes(PHCompositeNode* topNode);
-    std::string MakeBaseName(const std::string& base, const std::string& stat, const std::string& node);
+    std::string MakeBaseName(const std::string& base, const std::string& node, const std::string& stat = "") const;
 
     ///! module configuration
     Config m_config;
@@ -114,12 +120,6 @@ class CaloStatusMapper : public SubsysReco
 
     ///! input nodes
     std::vector<TowerInfoContainer*> m_inNodes;
-
-    ///! module name
-    std::string m_moduleName;
-
-    ///! histogram tag
-    std::string m_histTag {""};
 
     ///! no. of events processed
     uint64_t m_nEvent {0};

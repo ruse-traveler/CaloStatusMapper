@@ -45,7 +45,7 @@ void Fun4All_TestCaloStatusMapper(
   const int nEvents = 100,
   const std::string& inlist = "lists/events/dst_calo_run2pp-00047289.list",
   const std::string& outfile = "test.root",
-  const std::string& outfile_hist = "prepForMerge_updateHistManagement.run2pp_00047289_nEvt100.d10m3y2025.root",
+  const std::string& outfile_hist = "prepForMerge_makeConsistentWithBBFQ.run2pp_00047289_nEvt100.d10m3y2025.root",
   const std::string& dbtag = "ProdA_2024",
   const int verbosity = 1
 ) {
@@ -55,6 +55,7 @@ void Fun4All_TestCaloStatusMapper(
   // trigger cluster maker options
   CaloStatusMapper::Config cfg_mapper {
     .debug       = true,
+    .histTag     = "Test",
     .doTrgSelect = false,
     .trgToSelect = JetQADefs::GL1::MBDNSJet1
   };
@@ -108,7 +109,6 @@ void Fun4All_TestCaloStatusMapper(
   // map out status of calo towers
   CaloStatusMapper* mapper = new CaloStatusMapper("CaloStatusMapper");
   mapper -> SetConfig(cfg_mapper);
-  mapper -> SetHistTag("Test");
   mapper -> Verbosity(verbosity);
   f4a    -> registerSubsystem(mapper);
 
