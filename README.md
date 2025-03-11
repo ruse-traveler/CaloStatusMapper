@@ -1,5 +1,8 @@
 # Calo Status Mapper
 
+**NOTE:** this is a public archive. This module is now a part of
+[`sPHENIX-Collaboration/coresoftware`](https://github.com/sPHENIX-Collaboration/coresoftware).
+
 ### Author:
 Derek Anderson
 
