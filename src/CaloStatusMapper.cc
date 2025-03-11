@@ -23,10 +23,6 @@
 #include <fun4all/Fun4AllReturnCodes.h>
 #include <fun4all/Fun4AllHistoManager.h>
 
-// jet background utilities
-// FIXME remove once MakeQAHistNames is in Jet QA
-#include <jetbackground/BeamBackgroundFilterAndQADefs.h>
-
 // phool libraries
 #include <phool/getClass.h>
 #include <phool/phool.h>
@@ -45,8 +41,7 @@
 #include <iostream>
 
 // abbreviate namespace for convenience
-// FIXME remove once MakeQAHistNames is in Jet QA
-namespace BeamBackgroundFilter = BBFQD:
+namespace CSMD = CaloStatusMapperDefs;
 
 
 
@@ -110,6 +105,9 @@ int CaloStatusMapper::Init(PHCompositeNode* topNode)
   // initialize manager/histograms
   InitHistManager();
   BuildHistograms();
+
+  // make sure event no. is set to 0
+  m_nEvent = 0;
   return Fun4AllReturnCodes::EVENT_OK;
 
 }  // end 'Init(PHCompositeNode*)'
@@ -145,36 +143,49 @@ int CaloStatusMapper::process_event(PHCompositeNode* topNode)
   for (size_t iNode = 0; iNode < m_inNodes.size(); ++iNode)
   {
 
+    // grab node name & make status base
+    const std::string nodeName = m_config.inNodeNames[iNode].first;
+    const std::string statBase = "Status_" + nodeName;
+
     // loop over towers
     TowerInfoContainer* towers = m_inNodes[iNode];
     for (size_t iTower = 0; iTower < towers->size(); ++iTower)
     {
 
-       // grab eta, phi indices
-       const int32_t key  = towers -> encode_key(iTower);
-       const int32_t iEta = towers -> getTowerEtaBin(key);
-       const int32_t iPhi = towers -> getTowerPhiBin(key);
+      // grab eta, phi indices
+      const int32_t key  = towers -> encode_key(iTower);
+      const int32_t iEta = towers -> getTowerEtaBin(key);
+      const int32_t iPhi = towers -> getTowerPhiBin(key);
 
-       // get status
-       const auto tower  = towers -> get_tower_at_channel(iTower);
-       const int  status = CaloStatusMapperDefs::GetTowerStatus(tower);
-       if (status == CaloStatusMapperDefs::Stat::Unknown)
-       {
-         std::cout << PHWHERE << ": Warning! Tower has an unknown status!\n"
-                   << "  channel = " << iTower << ", key = " << key << "\n"
-                   << "  node = " << m_config.inNodeNames[iNode].first
-                   << std::endl; 
-         continue;
-       } 
+      // get status
+      const auto tower  = towers -> get_tower_at_channel(iTower);
+      const auto status = CSMD::GetTowerStatus(tower);
+      if (status == CSMD::Stat::Unknown)
+      {
+        std::cout << PHWHERE << ": Warning! Tower has an unknown status!\n"
+                  << "  channel = " << iTower << ", key = " << key << "\n"
+                  << "  node = " << m_config.inNodeNames[iNode].first
+                  << std::endl; 
+        continue;
+      } 
 
-       // fill histograms accordingly
-       // TODO UPDATE ACCORDINGLY
-       m_hists -> Fill(iEta);
-       m_hists -> Fill(iPhi);
-       m_hists -> Fill(iEta, iPhi);
+      // make base eta/phi hist name
+      const std::string statLabel  = m_mapStatLabels[status];
+      const std::string perEtaBase = MakeBaseName("NPerEta", statLabel, nodeName);
+      const std::string perPhiBase = MakeBaseName("NPerPhi", statLabel, nodeName);
+      const std::string phiEtaBase = MakeBaseName("PhiVsEta", statLabel, nodeName);
+
+      // fill histograms accordingly
+      m_hists[statBase]   -> Fill(status);
+      m_hists[perEtaBase] -> Fill(iEta);
+      m_hists[perPhiBase] -> Fill(iPhi);
+      m_hists[phiEtaBase] -> Fill(iEta, iPhi);
 
     }  // end tower loop
   }  // end node loop
+
+  // increment event no. and return
+  ++m_nEvent;
   return Fun4AllReturnCodes::EVENT_OK;
 
 }  // end 'process_event(PHCompositeNode*)'
@@ -192,8 +203,15 @@ int CaloStatusMapper::End(PHCompositeNode *topNode)
     std::cout << "CaloStatusMapper::End(PHCompositeNode* topNode) This is the End..." << std::endl;
   }
 
+  // normalize avg. status no.s
+  for (const auto& nodeName : m_config.inNodeNames)
+  {
+    const std::string statBase = "Status_" + nodeName.first;
+    m_hists[statBase] -> Scale(1. / (double) m_nEvent);
+  }
+
   // register hists and exit
-  for (auto& hist : m_hists) {
+  for (const auto& hist : m_hists) {
     m_manager -> registerHisto(hist.second);
   }
   return Fun4AllReturnCodes::EVENT_OK;
@@ -241,58 +259,55 @@ void CaloStatusMapper::BuildHistograms()
   }
 
   // instantiate histogram definitions
-  const CaloStatusMapperDefs::EMCalHistDef emHistDef;
-  const CaloStatusMapperDefs::IHCalHistDef ihHistDef;
-  const CaloStatusMapperDefs::OHCalHistDef ohHistDef;
-
-  // grab relevant status labels
-  const auto& mapStatLabels = CaloStatusMapperDefs::StatLabels();
+  const CSMD::EMCalHistDef emHistDef;
+  const CSMD::IHCalHistDef ihHistDef;
+  const CSMD::OHCalHistDef ohHistDef;
 
   // loop over input node names
   for (const auto& nodeName : m_config.inNodeNames)
   {
 
     // make status hist name
-    const std::string& baseStat = "Status_" + nodeName.first;
-    const std::string& nameStat = BBQFQD::MakeQAHistNames({baseStat}, m_moduleName, m_histTag);
+    const std::string statBase = "Status_" + nodeName.first;
+    const std::string statName = CSMD::MakeQAHistName(statBase, m_moduleName, m_histTag);
 
     // create status hist
     //   - n.b. calo type doesn't matter here
-    m_hists[baseStat] = emHistDef.MakeStatus1D(nameStat);
+    m_hists[statBase] = emHistDef.MakeStatus1D(statName);
 
     // loop over status labels
-    for (const auto& statLabel : mapStatLabels)
+    for (const auto& statLabel : m_mapStatLabels)
     {
 
       // set relevant bin label for status histogram
-      m_hists[baseStat] -> GetXaxis() -> SetBinLabel(statLabel.first + 1, statLabel.second.data());
+      m_hists[statBase] -> GetXaxis() -> SetBinLabel(statLabel.first + 1, statLabel.second.data());
 
       // make base eta/phi hist name
       const std::string perEtaBase = MakeBaseName("NPerEta", statLabel.second, nodeName.first);
       const std::string perPhiBase = MakeBaseName("NPerPhi", statLabel.second, nodeName.first);
-      const std::string phiEtaBase = MakeBaseName("PhiVsEta", staLabel.second. nodeName.first);
+      const std::string phiEtaBase = MakeBaseName("PhiVsEta", statLabel.second, nodeName.first);
 
       // make full eta/phi hist name
-      const std::string namePerEta = BBFQD::MakeQAHistNames({perEtaBase}, m_moduleName, m_histTag);
-      const std::string namePerPhi = BBFQD::MakeQAHistNames({perPhiBase}, m_moduleName, m_histTag);
-      const std::string namePhiEta = BBFQD::MakeQAHistNames({phiEtaBase}, m_moduleName, m_histTag);
+      const std::string namePerEta = CSMD::MakeQAHistName(perEtaBase, m_moduleName, m_histTag);
+      const std::string namePerPhi = CSMD::MakeQAHistName(perPhiBase, m_moduleName, m_histTag);
+      const std::string namePhiEta = CSMD::MakeQAHistName(phiEtaBase, m_moduleName, m_histTag);
 
       // make eta/phi hists
       switch (nodeName.second)
       {
-        case CaloStatusMapperDefs::Calo::OHC:
+        case CSMD::Calo::OHC:
           m_hists[perEtaBase] = ohHistDef.MakeEta1D(namePerEta);
           m_hists[perPhiBase] = ohHistDef.MakePhi1D(namePerPhi);
           m_hists[phiEtaBase] = ohHistDef.MakePhiEta2D(namePhiEta);
           break;
-        case CaloStatusMapperDefs::Calo::IHC:
+        case CSMD::Calo::IHC:
           m_hists[perEtaBase] = ihHistDef.MakeEta1D(namePerEta);
           m_hists[perPhiBase] = ihHistDef.MakePhi1D(namePerPhi);
           m_hists[phiEtaBase] = ihHistDef.MakePhiEta2D(namePhiEta);
           break;
-        case CaloStatusMapperDefs::Calo::EMC:
+        case CSMD::Calo::EMC:
           [[fallthrough]];
-        default;
+        default:
           m_hists[perEtaBase] = emHistDef.MakeEta1D(namePerEta);
           m_hists[perPhiBase] = emHistDef.MakePhi1D(namePerPhi);
           m_hists[phiEtaBase] = emHistDef.MakePhiEta2D(namePhiEta);

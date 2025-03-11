@@ -97,17 +97,23 @@ class CaloStatusMapper : public SubsysReco
     void GrabNodes(PHCompositeNode* topNode);
     std::string MakeBaseName(const std::string& base, const std::string& stat, const std::string& node);
 
+    ///! module configuration
+    Config m_config;
+
     ///! histogram manager
     Fun4AllHistoManager* m_manager {nullptr};
 
     ///! for checking which trigger fired
     TriggerAnalyzer* m_analyzer {nullptr};
 
-    ///! input nodes
-    std::vector<TowerInfoContainer*> m_inNodes;
+    ///! status labels
+    std::map<CaloStatusMapperDefs::Stat, std::string> m_mapStatLabels {CaloStatusMapperDefs::StatLabels()};
 
     ///! output histograms
-    std::map<std::String, TH1*> m_hists;
+    std::map<std::string, TH1*> m_hists;
+
+    ///! input nodes
+    std::vector<TowerInfoContainer*> m_inNodes;
 
     ///! module name
     std::string m_moduleName;
@@ -115,8 +121,8 @@ class CaloStatusMapper : public SubsysReco
     ///! histogram tag
     std::string m_histTag {""};
 
-    ///! module configuration
-    Config m_config;
+    ///! no. of events processed
+    uint64_t m_nEvent {0};
 
 };  // end CaloStatusMapper
 

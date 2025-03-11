@@ -89,7 +89,7 @@ namespace CaloStatusMapperDefs
       {Stat::NoCalib,  "NoCalib"},
       {Stat::Unknown,  "Unknown"}
     };
-    return statLabels;
+    return mapStatLabels;
   }
 
 
@@ -129,28 +129,28 @@ namespace CaloStatusMapperDefs
     AxisDef phi  {"i_{#phi}", F, -0.5, F - 0.5};
 
     //! make 1 1d status plot
-    TH1D* MakeStatus1D(const std::string& name)
+    TH1D* MakeStatus1D(const std::string& name) const
     {
-      const std::string title = ";" + status.label;
+      const std::string title = ";" + stat.label;
       return new TH1D(name.data(), title.data(), stat.nBins, stat.start, stat.stop);
     }
 
     //! make a 1d eta plot
-    TH1D* MakeEta1D(const std::string& name)
+    TH1D* MakeEta1D(const std::string& name) const
     {
       const std::string title = ";" + eta.label;
       return new TH1D(name.data(), title.data(), eta.nBins, eta.start, eta.stop);
     }
 
     //! make a 1d phi plot
-    TH1D* MakePhi1D(const std::string& name)
+    TH1D* MakePhi1D(const std::string& name) const
     {
       const std::string title = ";" + phi.label;
       return new TH1D(name.data(), title.data(), phi.nBins, phi.start, phi.stop);
     }
 
     //! make a 2d eta-phi plot
-    TH1D* MakePhiEta2D(const std::string& name)
+    TH2D* MakePhiEta2D(const std::string& name) const
     {
       const std::string title = ";" + eta.label + ";" + phi.label;
       return new TH2D(name.data(), title.data(), eta.nBins, eta.start, eta.stop, phi.nBins, phi.start, phi.stop);
@@ -173,10 +173,10 @@ namespace CaloStatusMapperDefs
   /*! This helper methods returns the associated code of
    *  the provided tower.
    */ 
-  int GetTowerStatus(TowerInfo* tower)
+  Stat GetTowerStatus(TowerInfo* tower)
   {
 
-    int status = Stat::Unknown;
+    Stat status = Stat::Unknown;
     if (tower -> get_isHot())
     {
       status = Stat::Hot;
@@ -204,6 +204,45 @@ namespace CaloStatusMapperDefs
     return status;
 
   }  // end 'GetTowerStatus(TowerInfo*)'
+
+
+
+  // ==========================================================================
+  //! Make QA-compliant histogram name
+  // ==========================================================================
+  /*! This helper method takes in a base name (e.g. some variable you want
+   *  to histogram like "JetEne") and produces a histogram name compliant
+   *  w/ the rest of the jet QA.
+   *
+   *  The format should always be:
+   *      h_<module name>_<trigger tag>_<jet tag>_<base name> + <tag>
+   *
+   *  FIXME this should get moved into JetQADefs.h
+   */
+  inline std::string MakeQAHistName(
+    const std::string& base,
+    const std::string& module,
+    const std::string& tag = "")
+  {
+
+    // set name to base
+    std::string name = base;
+
+    // inject module names, tags, etc.
+    name.insert(0, "h_" + module + "_");
+    if (!tag.empty())
+    {
+      name.append("_" + tag);
+    }
+    std::transform(
+      name.begin(),
+      name.end(),
+      name.begin(),
+      ::tolower
+    );
+    return name;
+
+  }  // end 'MakeQAHistNames(std::string& x 3)'
 
 }  // end CaloStatusMapperDefs namespace
 
