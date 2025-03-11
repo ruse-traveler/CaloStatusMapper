@@ -277,8 +277,7 @@ void CaloStatusMapper::BuildHistograms()
 
   // instantiate histogram definitions
   const CSMD::EMCalHistDef emHistDef;
-  const CSMD::IHCalHistDef ihHistDef;
-  const CSMD::OHCalHistDef ohHistDef;
+  const CSMD::HCalHistDef  hcHistDef;
 
   // loop over input node names
   for (const auto& nodeName : m_config.inNodeNames)
@@ -312,17 +311,12 @@ void CaloStatusMapper::BuildHistograms()
       // make eta/phi hists
       switch (nodeName.second)
       {
-        case CSMD::Calo::OHC:
-          m_hists[perEtaBase] = ohHistDef.MakeEta1D(namePerEta);
-          m_hists[perPhiBase] = ohHistDef.MakePhi1D(namePerPhi);
-          m_hists[phiEtaBase] = ohHistDef.MakePhiEta2D(namePhiEta);
+        case CSMD::Calo::HCal:
+          m_hists[perEtaBase] = hcHistDef.MakeEta1D(namePerEta);
+          m_hists[perPhiBase] = hcHistDef.MakePhi1D(namePerPhi);
+          m_hists[phiEtaBase] = hcHistDef.MakePhiEta2D(namePhiEta);
           break;
-        case CSMD::Calo::IHC:
-          m_hists[perEtaBase] = ihHistDef.MakeEta1D(namePerEta);
-          m_hists[perPhiBase] = ihHistDef.MakePhi1D(namePerPhi);
-          m_hists[phiEtaBase] = ihHistDef.MakePhiEta2D(namePhiEta);
-          break;
-        case CSMD::Calo::EMC:
+        case CSMD::Calo::EMCal:
           [[fallthrough]];
         default:
           m_hists[perEtaBase] = emHistDef.MakeEta1D(namePerEta);

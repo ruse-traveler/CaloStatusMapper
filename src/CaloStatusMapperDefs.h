@@ -49,10 +49,9 @@ namespace CaloStatusMapperDefs
    */
   enum Calo
   {
-    EMC,
-    IHC,
-    OHC,
-    NONE
+    EMCal,  ///!< EMCal geometry
+    HCal,   ///!< I/OHCal geometry
+    NONE  ///!< Unspecified geometry
   };
 
 
@@ -162,8 +161,7 @@ namespace CaloStatusMapperDefs
   //! Maps for specific calorimeters
   // -------------------------------------------------------------------------
   typedef HistDef<96, 256, 7> EMCalHistDef;
-  typedef HistDef<24, 64, 7> IHCalHistDef;
-  typedef HistDef<24, 64, 7> OHCalHistDef;
+  typedef HistDef<24, 64, 7> HCalHistDef;
 
 
 

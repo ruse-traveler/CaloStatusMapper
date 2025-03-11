@@ -66,9 +66,9 @@ class CaloStatusMapper : public SubsysReco
       ///! input nodes and what type of calo they are
       std::vector<CaloStatusMapperDefs::NodeDef> inNodeNames
       {
-        {"TOWERINFO_CALIB_CEMC",    CaloStatusMapperDefs::Calo::EMC},
-        {"TOWERINFO_CALIB_HCALIN",  CaloStatusMapperDefs::Calo::IHC},
-        {"TOWERINFO_CALIB_HCALOUT", CaloStatusMapperDefs::Calo::OHC}
+        {"TOWERINFO_CALIB_CEMC",    CaloStatusMapperDefs::Calo::EMCal},
+        {"TOWERINFO_CALIB_HCALIN",  CaloStatusMapperDefs::Calo::HCal},
+        {"TOWERINFO_CALIB_HCALOUT", CaloStatusMapperDefs::Calo::HCal}
       };
 
      ///! turn trigger selection on/off

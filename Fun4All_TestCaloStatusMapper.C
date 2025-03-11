@@ -43,9 +43,9 @@ R__LOAD_LIBRARY(libjetqa.so)
 
 void Fun4All_TestCaloStatusMapper(
   const int nEvents = 100,
-  const std::string& inlist = "lists/events/dst_calo_run2pp-00047289.list",
+  const std::string& inlist = "input/dst_calo_run2pp-00047289.list",
   const std::string& outfile = "test.root",
-  const std::string& outfile_hist = "prepForMerge_makeConsistentWithBBFQ.run2pp_00047289_nEvt100.d10m3y2025.root",
+  const std::string& outfile_hist = "test_hists.root",
   const std::string& dbtag = "ProdA_2024",
   const int verbosity = 1
 ) {
@@ -62,8 +62,8 @@ void Fun4All_TestCaloStatusMapper(
 
   // for example, we'll only look at the EMCal and OHCal
   cfg_mapper.inNodeNames = {
-    {"TOWERINFO_CALIB_CEMC",    CaloStatusMapperDefs::Calo::EMC},
-    {"TOWERINFO_CALIB_HCALOUT", CaloStatusMapperDefs::Calo::OHC}
+    {"TOWERINFO_CALIB_CEMC",    CaloStatusMapperDefs::Calo::EMCal},
+    {"TOWERINFO_CALIB_HCALOUT", CaloStatusMapperDefs::Calo::HCal}
   };
 
   // initialize f4a -----------------------------------------------------------
